@@ -14,6 +14,6 @@ env:
   - name: GENIE_SPACE_ID
     value: ""
   - name: DASHBOARD_ID
-    value: ""
+    value: "01f17b7f0e4618818bcd3e6e24f656fb"
   - name: HUB_APP_URL
     value: "https://actuarial-workbench-7474656169654171.aws.databricksapps.com"

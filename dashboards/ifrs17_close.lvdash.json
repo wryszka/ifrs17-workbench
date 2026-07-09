@@ -1,0 +1,385 @@
+{
+ "datasets": [
+  {
+   "name": "ds_isr",
+   "displayName": "Insurance service result by quarter",
+   "queryLines": [
+    "SELECT close_period, amount FROM lr_dev_aws_us_catalog.ifrs17_workbench.gld_pnl_statement WHERE line_item = 'Insurance service result' ORDER BY close_period"
+   ]
+  },
+  {
+   "name": "ds_revenue",
+   "displayName": "Insurance revenue by component",
+   "queryLines": [
+    "SELECT close_period, component, ROUND(SUM(amount),0) amount FROM lr_dev_aws_us_catalog.ifrs17_workbench.gld_insurance_revenue GROUP BY 1,2 ORDER BY 1,2"
+   ]
+  },
+  {
+   "name": "ds_groups",
+   "displayName": "Groups at the current close",
+   "queryLines": [
+    "SELECT group_id, measurement_model, ROUND(bs_lrc_total,0) bs_lrc_total, ROUND(csm,0) csm, ROUND(loss_component,0) loss_component, onerous FROM lr_dev_aws_us_catalog.ifrs17_workbench.gld_cohort_360 ORDER BY bs_lrc_total DESC"
+   ]
+  },
+  {
+   "name": "ds_headroom",
+   "displayName": "Onerous headroom trend",
+   "queryLines": [
+    "SELECT close_period, group_id, ROUND(headroom,0) headroom FROM lr_dev_aws_us_catalog.ifrs17_workbench.gld_onerous_test WHERE group_id LIKE 'PROP%' OR group_id LIKE 'MOT%' ORDER BY close_period"
+   ]
+  },
+  {
+   "name": "ds_lic",
+   "displayName": "LIC closing by portfolio",
+   "queryLines": [
+    "SELECT close_period, portfolio_id, ROUND(SUM(amount),0) lic_closing FROM lr_dev_aws_us_catalog.ifrs17_workbench.gld_lic_rollforward WHERE step='closing' GROUP BY 1,2 ORDER BY 1,2"
+   ]
+  },
+  {
+   "name": "ds_csm",
+   "displayName": "CSM closing by group",
+   "queryLines": [
+    "SELECT close_period, group_id, ROUND(SUM(amount),0) csm_closing FROM lr_dev_aws_us_catalog.ifrs17_workbench.gld_csm_rollforward WHERE step='closing' GROUP BY 1,2 ORDER BY 1,2"
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "name": "main",
+   "displayName": "IFRS 17 \u2014 Close View",
+   "layout": [
+    {
+     "widget": {
+      "name": "w_isr",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_isr",
+         "fields": [
+          {
+           "name": "close_period",
+           "expression": "`close_period`"
+          },
+          {
+           "name": "amount",
+           "expression": "`amount`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "close_period",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "amount",
+         "scale": {
+          "type": "quantitative"
+         }
+        }
+       },
+       "frame": {
+        "title": "Insurance service result by quarter (EUR)",
+        "showTitle": true
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 3,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "w_rev",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_revenue",
+         "fields": [
+          {
+           "name": "close_period",
+           "expression": "`close_period`"
+          },
+          {
+           "name": "amount",
+           "expression": "`amount`"
+          },
+          {
+           "name": "component",
+           "expression": "`component`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "close_period",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "amount",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "component",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "frame": {
+        "title": "Insurance revenue by component",
+        "showTitle": true
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 0,
+      "width": 3,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "w_csm",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_csm",
+         "fields": [
+          {
+           "name": "close_period",
+           "expression": "`close_period`"
+          },
+          {
+           "name": "csm_closing",
+           "expression": "`csm_closing`"
+          },
+          {
+           "name": "group_id",
+           "expression": "`group_id`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "line",
+       "encodings": {
+        "x": {
+         "fieldName": "close_period",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "csm_closing",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "group_id",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "frame": {
+        "title": "CSM closing by group (GMM)",
+        "showTitle": true
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 6,
+      "width": 3,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "w_head",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_headroom",
+         "fields": [
+          {
+           "name": "close_period",
+           "expression": "`close_period`"
+          },
+          {
+           "name": "headroom",
+           "expression": "`headroom`"
+          },
+          {
+           "name": "group_id",
+           "expression": "`group_id`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "line",
+       "encodings": {
+        "x": {
+         "fieldName": "close_period",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "headroom",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "group_id",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "frame": {
+        "title": "\u00a757 onerous headroom trend (PAA groups)",
+        "showTitle": true
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 6,
+      "width": 3,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "w_lic",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_lic",
+         "fields": [
+          {
+           "name": "close_period",
+           "expression": "`close_period`"
+          },
+          {
+           "name": "lic_closing",
+           "expression": "`lic_closing`"
+          },
+          {
+           "name": "portfolio_id",
+           "expression": "`portfolio_id`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "close_period",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "lic_closing",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "portfolio_id",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "frame": {
+        "title": "LIC closing by portfolio (discounted + RA)",
+        "showTitle": true
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 12,
+      "width": 3,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "t_groups",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_groups",
+         "fields": [],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 1,
+       "widgetType": "table",
+       "encodings": {},
+       "frame": {
+        "title": "Groups at the current close",
+        "showTitle": true
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 12,
+      "width": 3,
+      "height": 6
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS"
+  }
+ ]
+}
