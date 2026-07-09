@@ -104,6 +104,7 @@ for _, g in groups.iterrows():
     q_rate = 1.0 / df3 - 1.0
     opening, lc = 0.0, 0.0
     prev_fcf_rem = None
+    tranches = []  # (written_amount, quarter_index) — for the coverage-weighted NB share
     for i, lbl in enumerate(QL):
         if int(lbl[:4]) < cy:
             continue
@@ -135,13 +136,21 @@ for _, g in groups.iterrows():
         # --- 3 · accretion at locked-in ---
         accretion = round(opening * q_rate, 2)
 
-        # --- 5 · future-service unlock: run-on-run PV change, same curve, same as-at, NB stripped ---
+        # --- 5 · future-service unlock: run-on-run PV change for EXISTING contracts only.
+        # The new-business share of the current FCF is allocated coverage-weighted from the
+        # projections themselves (written × remaining coverage), so no pricing-basis mismatch
+        # can masquerade as an assumption change. Disclosed simplification.
+        if n is not None and float(n["written_nb"]) > 0:
+            tranches.append([float(n["written_nb"]), i])
+        weights = [wr * max(0, cov_m - 3 * (i - qi)) for wr, qi in tranches]
+        nb_w = weights[-1] if (n is not None and float(n["written_nb"]) > 0 and weights) else 0.0
+        nb_share = (nb_w / sum(weights)) if sum(weights) > 0 else 0.0
         fcf_now, ra_now = fcf_rem_locked(run, port, cy, li_date, asof, raf)
         unlock = 0.0
         if prev_fcf_rem is not None:
             prior_run = f"RSV_{QL[i-1]}"
             fcf_prior_reval, _ = fcf_rem_locked(prior_run, port, cy, li_date, asof, raf)
-            unlock = round(fcf_now - fcf_prior_reval - nb_fcf_future, 2)
+            unlock = round(fcf_now * (1.0 - nb_share) - fcf_prior_reval, 2)
         prev_fcf_rem = fcf_now
 
         # --- 7 · release last, on the post-adjustment balance ---

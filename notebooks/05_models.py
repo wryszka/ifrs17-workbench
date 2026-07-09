@@ -27,7 +27,9 @@ import numpy as np
 import pandas as pd
 
 mlflow.set_registry_uri("databricks-uc")
-mlflow.set_experiment(f"/Shared/ifrs17_workbench/lic_emergence")
+from databricks.sdk import WorkspaceClient
+WorkspaceClient().workspace.mkdirs("/Shared/ifrs17_workbench")
+mlflow.set_experiment("/Shared/ifrs17_workbench/lic_emergence")
 
 # COMMAND ----------
 
