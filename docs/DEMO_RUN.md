@@ -1,5 +1,9 @@
 # DEMO_RUN — IFRS 17 Workbench (~20 minutes)
 
+**Canonical Google Doc of this run guide:**
+https://docs.google.com/document/d/11dqx4qErSn-yuUtSQElQM8-62V_7QlHAzXOArJBXm7o/edit
+(Drive: bricksurance → IFRS 17 Workbench)
+
 **Quick links (dev workspace `fevm-lr-dev-aws-us`):**
 App: https://ifrs17-workbench-7474656169654171.aws.databricksapps.com ·
 Hub tile: https://actuarial-workbench-7474656169654171.aws.databricksapps.com ·
