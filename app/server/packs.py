@@ -10,6 +10,17 @@ import json
 
 from fpdf import FPDF
 
+_SUBS = {"—": "-", "–": "-", "•": "*", "§": "para. ", "→": "->",
+         "€": "EUR ", "“": '"', "”": '"', "‘": "'", "’": "'"}
+
+
+def _txt(v):
+    """Core PDF fonts are latin-1 only — swap the common typography, drop the rest."""
+    s = str(v if v not in (None, "") else "-")
+    for k, r in _SUBS.items():
+        s = s.replace(k, r)
+    return s.encode("latin-1", "replace").decode("latin-1")
+
 
 def _m(v):
     try:
@@ -50,10 +61,10 @@ def _kv(pdf, k, v):
     pdf.set_x(pdf.l_margin)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(70, 5.5, str(k)[:52])
+    pdf.cell(70, 5.5, _txt(k)[:52])
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(15, 23, 42)
-    pdf.multi_cell(pdf.w - pdf.l_margin - pdf.r_margin - 70, 5.5, str(v if v not in (None, "") else "-")[:300])
+    pdf.multi_cell(pdf.w - pdf.l_margin - pdf.r_margin - 70, 5.5, _txt(v)[:300])
 
 
 def build_certificate(cert_id: str, period: str, signed_by: str, evidence: dict) -> tuple[bytes, str]:

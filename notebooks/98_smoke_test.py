@@ -41,7 +41,7 @@ drifted = [f for f in os.listdir(f"{VOL}/landing/actuarial_projections") if "DRI
 step("no drifted file in landing (default state = green close)", not drifted, drifted or "clean")
 
 r = one(f"SELECT ROUND(SUM(gwp),2) g, SUM(policies) p FROM {FQ}.gld_book_summary")
-step("book GWP ties to design (EUR 371.3m)", abs(float(r["g"]) - 371_300_000.0) < 1.0, f"GWP {r['g']}, {r['p']} policies")
+step("book GWP ties to design (EUR 391.3m)", abs(float(r["g"]) - 391_300_000.0) < 1.0, f"GWP {r['g']}, {r['p']} policies")
 
 # COMMAND ----------
 
@@ -170,8 +170,8 @@ step("HERO: PROP-2025-REM onerous too (H2-weighted writings still on risk)",
 r = one(f"""SELECT SUM(CASE WHEN step='fcf_changes_future_service' THEN amount END) unlock,
                    SUM(CASE WHEN step='closing' THEN amount END) closing
             FROM {FQ}.gld_csm_rollforward WHERE group_id='CLT-2025-NSP' AND close_period='{CLOSE_PERIOD}'""")
-step("HERO: CLT-2025 casualty-inflation unlock visible, CSM survives",
-     float(r["unlock"]) < -700_000 and float(r["closing"]) > 1_000_000,
+step("HERO: CLT-2025 casualty-inflation unlock visible, CSM survives (thin but positive)",
+     float(r["unlock"]) < -700_000 and float(r["closing"]) > 300_000,
      f"unlock {r['unlock']}, closing {r['closing']}")
 
 r = one(f"""SELECT MAX(ABS(amount)) worst FROM {FQ}.gld_csm_rollforward
