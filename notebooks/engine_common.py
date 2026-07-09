@@ -128,7 +128,8 @@ def set_status(working_day, workstream, status, detail, run_name):
         USING (SELECT '{CLOSE_PERIOD}' cp, {working_day} wd, '{workstream}' ws) s
         ON t.close_period = s.cp AND t.working_day = s.wd AND t.workstream = s.ws
         WHEN MATCHED THEN UPDATE SET status='{status}', detail='{d}', updated_by='{run_name}', updated_at=current_timestamp()
-        WHEN NOT MATCHED THEN INSERT VALUES ('{CLOSE_PERIOD}', {working_day}, '{workstream}', '{status}', '{d}', '{run_name}', current_timestamp())""")
+        WHEN NOT MATCHED THEN INSERT (close_period, working_day, workstream, status, detail, updated_by, updated_at)
+        VALUES ('{CLOSE_PERIOD}', {working_day}, '{workstream}', '{status}', '{d}', '{run_name}', current_timestamp())""")
 
 
 # ---------- run audit: the join, not the project ----------

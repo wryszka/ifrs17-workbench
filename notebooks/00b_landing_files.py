@@ -417,6 +417,10 @@ for run_i, (ry, rq) in enumerate(QUARTERS):
             w = [c["wq1"], c["wq2"], c["wq3"], c["wq4"]][p_q]
             if w <= 0:
                 continue
+            # a reserving run can only project contracts that EXIST at its as-of date —
+            # tranches not yet written are absent from earlier runs (they arrive as new business)
+            if q_start(cy, p_q + 1) > asof:
+                continue
             written = c["gwp"] * w
             inc_mid = q_start(cy, p_q + 1) + datetime.timedelta(days=45)
             if port == "CLT":

@@ -1,0 +1,46 @@
+resources:
+  jobs:
+    ifrs17_99_reset:
+      name: ifrs17_99_reset
+      description: "Reset demo: prep (remove drift, clear cache/approvals) → truth+landing (seed 42) → medallion FULL refresh → quarter close. Heroes byte-identical. Never recreates fns, never retrains."
+      tags:
+        project: ifrs17_workbench
+      environments:
+        - environment_key: default
+          spec:
+            client: "5"
+            dependencies:
+              - openpyxl
+      tasks:
+        - task_key: prep
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/99_reset.py
+            base_parameters: &params
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+        - task_key: truth
+          depends_on:
+            - task_key: prep
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/00_setup_and_data_generation.py
+            base_parameters: *params
+        - task_key: landing
+          depends_on:
+            - task_key: truth
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/00b_landing_files.py
+            base_parameters: *params
+        - task_key: medallion_full_refresh
+          depends_on:
+            - task_key: landing
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.ifrs17_medallion.id}
+            full_refresh: true
+        - task_key: quarter_close
+          depends_on:
+            - task_key: medallion_full_refresh
+          run_job_task:
+            job_id: ${resources.jobs.ifrs17_quarter_close.id}

@@ -1,0 +1,19 @@
+resources:
+  jobs:
+    ifrs17_98_smoke_test:
+      name: ifrs17_98_smoke_test
+      description: "One row per check, PASS/FAIL, fails loudly: the 8 recon identities + hero invariants + realism bounds + installed-assets checklist. All must PASS before anyone demos."
+      tags:
+        project: ifrs17_workbench
+      environments:
+        - environment_key: default
+          spec:
+            client: "5"
+      tasks:
+        - task_key: smoke
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/98_smoke_test.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}

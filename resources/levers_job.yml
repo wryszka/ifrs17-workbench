@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    ifrs17_demo_levers:
+      name: ifrs17_demo_levers
+      description: "Demo levers: inject/restore the drifted reserving file (action parameter). File ops on the Volume — a real bad delivery and its fix."
+      tags:
+        project: ifrs17_workbench
+      parameters:
+        - name: action
+          default: "restore"
+      environments:
+        - environment_key: default
+          spec:
+            client: "5"
+      tasks:
+        - task_key: lever
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/90_demo_levers.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              action: "{{job.parameters.action}}"

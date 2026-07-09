@@ -1,7 +1,856 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>IFRS 17 Workbench — Bricksurance SE</title></head>
-<body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f8fafc;color:#0f172a;display:grid;place-items:center;height:100vh;margin:0">
-<div style="text-align:center"><h1 style="color:#2563eb">IFRS 17 Workbench</h1><p>Bricksurance SE — under construction (P6 delivers the full app).</p></div>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bricksurance SE — IFRS 17 Workbench</title>
+<style>
+  :root{--slate:#1e293b;--slate2:#0f172a;--blue:#2563eb;--blue4:#60a5fa;--ink:#0f172a;--mut:#64748b;
+        --line:#e2e8f0;--bg:#f8fafc;--card:#fff;--red:#dc2626;--redbg:#fef2f2;--amber:#d97706;--ambbg:#fffbeb;
+        --green:#16a34a;--greenbg:#f0fdf4;--violet:#6d28d9}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--bg);font-size:14px}
+  .app{display:flex;min-height:100vh}
+  .side{width:264px;background:linear-gradient(180deg,#1e293b 0%,#172033 100%);color:#cbd5e1;flex-shrink:0;display:flex;flex-direction:column;position:fixed;height:100vh;border-right:1px solid rgba(255,255,255,.06);z-index:5}
+  .brand{display:flex;align-items:center;gap:11px;padding:16px 16px;border-bottom:1px solid rgba(255,255,255,.08);text-decoration:none;cursor:pointer}
+  .brand:hover{background:rgba(255,255,255,.03)}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#2563eb,#60a5fa);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(37,99,235,.4)}
+  .brand .logo svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2}
+  .brand .btxt b{color:#fff;font-size:14.5px;display:block;line-height:1.15;letter-spacing:-.01em}
+  .brand .btxt span{font-size:10.5px;color:#94a3b8}
+  .nav{flex:1;padding:6px 10px;overflow:auto}
+  .nav .sec{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#5b6878;padding:15px 10px 5px}
+  .nav .sec:first-child{padding-top:8px}
+  .nav a{display:flex;align-items:center;gap:11px;padding:8.5px 11px;border-radius:9px;color:#cbd5e1;text-decoration:none;font-size:13.5px;margin:1px 0;cursor:pointer;transition:background .12s,color .12s}
+  .nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav a.on{background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(37,99,235,.35)}
+  .cachetog{padding:0 12px 6px}
+  .cachetog button{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 10px;border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;border:1px solid;background:transparent;transition:.12s;letter-spacing:.02em}
+  .cachetog .csub{font-size:9.5px;color:#64748b;text-align:center;margin-top:4px;line-height:1.3}
+  .cachetog button.cached{color:#fbbf24;border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.12)}
+  .cachetog button.live{color:#34d399;border-color:rgba(52,211,153,.45);background:rgba(52,211,153,.12)}
+  .cachetog button.learnbtn{color:#34d399;border-color:rgba(52,211,153,.45);background:rgba(52,211,153,.12)}
+  .cachetog button.learnbtn:hover{background:rgba(52,211,153,.2)}
+  .cachetog button.learnbtn.on{background:rgba(52,211,153,.3)}
+  .side .foot{padding:12px;border-top:1px solid rgba(255,255,255,.08)}
+  .rbtn{width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;border:1px solid rgba(255,255,255,.12);cursor:pointer;font-size:13px}
+  .rbtn:hover{background:rgba(255,255,255,.16)}
+  .disc{font-size:10.5px;color:#64748b;margin-top:10px;line-height:1.4}
+  .main{margin-left:264px;flex:1;padding:28px 34px;max-width:1180px}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:4px}
+  h1{font-size:24px;margin:0 0 4px}
+  .sub{color:var(--mut);margin:0 0 22px;font-size:13.5px}
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card h3{margin:0 0 8px;font-size:13px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .big{font-size:26px;font-weight:700}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700}
+  .RED,.red{background:var(--redbg);color:var(--red)}
+  .AMBER,.amber{background:var(--ambbg);color:var(--amber)}
+  .GREEN,.green{background:var(--greenbg);color:var(--green)}
+  .bluep{background:#dbeafe;color:#1d4ed8}
+  .slatep{background:#e2e8f0;color:#334155}
+  .violetp{background:#ede9fe;color:#6d28d9}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  tr.click:hover{background:#f1f5f9;cursor:pointer}
+  tr.hot{background:#fff7ed}
+  .narr{background:#f8fafc;border:1px solid var(--line);border-left:3px solid var(--violet);border-radius:8px;padding:13px 15px;margin-top:10px;font-size:13.5px;line-height:1.55;white-space:pre-wrap}
+  .narr .tag{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:block}
+  .muted{color:var(--mut);font-size:12.5px}
+  .kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:13px;gap:12px}
+  .kv b{font-weight:600;text-align:right}
+  .btn{padding:7px 13px;border-radius:8px;background:var(--blue);color:#fff;border:0;cursor:pointer;font-size:12.5px;margin-right:8px}
+  .btn.ghost{background:#eef2ff;color:var(--blue)}
+  .btn.warn{background:var(--ambbg);color:var(--amber);border:1px solid #fde68a}
+  .btn.bad{background:var(--redbg);color:var(--red);border:1px solid #fecaca}
+  .btn.good{background:var(--greenbg);color:var(--green);border:1px solid #bbf7d0}
+  .note{background:var(--ambbg);border:1px solid #fde68a;border-radius:10px;padding:12px 15px;font-size:12.5px;color:#92400e;margin-top:16px}
+  .prov{background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:12px 15px;font-size:12.5px;color:#3730a3;margin-top:16px}
+  a.lnk{color:var(--blue);text-decoration:none;cursor:pointer}
+  .loading{color:var(--mut);padding:20px}
+  .present{display:flex;gap:10px;align-items:flex-start;background:linear-gradient(90deg,#eef2ff,#faf5ff);border:1px solid #ddd6fe;border-radius:10px;padding:10px 14px;font-size:12.5px;color:#4338ca;margin:0 0 20px;line-height:1.5}
+  .present .ptag{flex-shrink:0;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:10px;color:#6d28d9;background:#fff;border:1px solid #ddd6fe;border-radius:6px;padding:3px 7px;margin-top:1px}
+  .askbox{background:linear-gradient(135deg,#312e81 0%,#6d28d9 55%,#7c3aed 100%);border-radius:16px;padding:22px 24px;color:#fff;margin-bottom:22px;box-shadow:0 10px 30px rgba(109,40,217,.28)}
+  .askbox h2{margin:0 0 5px;font-size:19px;color:#fff}
+  .askbox .sb{font-size:13px;color:#ddd6fe;margin-bottom:14px;line-height:1.5;max-width:760px}
+  .askbox .exs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .askbox .ex{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#ede9fe;padding:6px 12px;border-radius:999px;font-size:12px;cursor:pointer}
+  .askbox .ex:hover{background:rgba(255,255,255,.24)}
+  .askbox .row{display:flex;gap:9px}
+  .askbox input{flex:1;padding:12px 14px;border:0;border-radius:9px;font-size:13.5px;color:var(--ink)}
+  .askbox .go{padding:12px 22px;border-radius:9px;background:#fff;color:#6d28d9;border:0;font-weight:700;cursor:pointer;font-size:13.5px}
+  .askbox .ans{margin-top:14px;background:rgba(255,255,255,.97);border-radius:11px;padding:14px 16px;color:var(--ink)}
+  .trace{margin-top:8px;font-size:11px;color:#ddd6fe}
+  .trace b{color:#fff}
+  .aitiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:10px}
+  .atile{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:transform .12s,box-shadow .12s;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;cursor:pointer}
+  .atile:before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+  .atile:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(15,23,42,.13)}
+  .atile .ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:12px}
+  .atile .role{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+  .atile .nm{font-size:15px;display:block;margin-bottom:5px;font-weight:700}
+  .atile .d{font-size:12.5px;color:var(--mut);line-height:1.5;flex:1}
+  .atile .ep{margin-top:11px;font-size:10px;color:#94a3b8;font-family:ui-monospace,SFMono-Regular,monospace;word-break:break-all}
+  .tone-violet{border-color:#ddd6fe;background:#faf5ff}.tone-violet:before{background:linear-gradient(90deg,#7c3aed,#a78bfa)}.tone-violet .ic{background:#f3e8ff;color:#7c3aed}.tone-violet .role{color:#7c3aed}
+  .tone-blue{border-color:#bfdbfe;background:#eff6ff}.tone-blue:before{background:linear-gradient(90deg,#2563eb,#60a5fa)}.tone-blue .ic{background:#dbeafe;color:#2563eb}.tone-blue .role{color:#2563eb}
+  .tone-emerald{border-color:#bbf7d0;background:#f0fdf4}.tone-emerald:before{background:linear-gradient(90deg,#16a34a,#4ade80)}.tone-emerald .ic{background:#dcfce7;color:#15803d}.tone-emerald .role{color:#15803d}
+  .tone-amber{border-color:#fde68a;background:#fffbeb}.tone-amber:before{background:linear-gradient(90deg,#d97706,#fbbf24)}.tone-amber .ic{background:#fef3c7;color:#b45309}.tone-amber .role{color:#b45309}
+  .sech{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);margin:22px 0 4px}
+  .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:40;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto}
+  .modal{background:#fff;border-radius:14px;max-width:940px;width:100%;padding:22px;position:relative}
+  .modal .x{position:absolute;top:12px;right:14px;cursor:pointer;font-size:18px;color:var(--mut);background:none;border:0}
+  .sqlbox{background:#0f172a;color:#93c5fd;font-family:ui-monospace,SFMono-Regular,monospace;font-size:11.5px;border-radius:9px;padding:12px;white-space:pre-wrap;margin-top:10px;display:none}
+  .srcbar{font-size:11px;color:var(--mut);margin-top:10px}
+  .tscroll{max-height:420px;overflow:auto}
+  .tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+  .tabs button{padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:12.5px}
+  .tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+  iframe.embed{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff}
+  input.f,select.f{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;margin-top:3px}
+  label.f{font-size:11px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-top:10px}
+  .mono{font-family:ui-monospace,SFMono-Regular,monospace;font-size:11.5px}
+  .lhero{text-align:center;max-width:780px;margin:6px auto 0}
+  .lhero .eyebrow{display:block}
+  .lhero h1{font-size:38px;line-height:1.08;letter-spacing:-.02em;margin:10px 0 0}
+  .lhero .lead{color:var(--mut);font-size:15px;line-height:1.6;margin:14px auto 0;max-width:680px}
+  .lcta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+  .lcta a{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:10px;font-size:13.5px;font-weight:700;text-decoration:none;transition:.12s;cursor:pointer}
+  .lcta .primary{background:var(--blue);color:#fff;box-shadow:0 4px 16px rgba(37,99,235,.32)}
+  .lcta .primary:hover{background:#1d4ed8}
+  .lcta .ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .lcta .ghost:hover{background:#f8fafc}
+  .about{max-width:900px;margin:26px auto 0;background:var(--ambbg);border:1px solid #fde68a;border-radius:14px;padding:16px 20px;font-size:13px;color:#92400e;line-height:1.65}
+  .lsec{margin-top:32px}
+  .lsec .lh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .lsec .lh h2{font-size:16px;margin:0}
+  .lsec .lhsub{font-size:13px;color:var(--mut);line-height:1.55;max-width:820px;margin:0 0 16px}
+  .lstages{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+  .lstage{display:flex;flex-direction:column;border:1px solid var(--line);border-top:3px solid #2563eb;border-radius:11px;background:#fff;padding:12px;text-decoration:none;transition:.12s;cursor:pointer}
+  .lstage:hover{box-shadow:0 8px 22px rgba(15,23,42,.1);transform:translateY(-2px)}
+  .lstage .sn{font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em}
+  .lstage .st{font-size:13.5px;font-weight:700;color:var(--ink);margin-top:2px}
+  .lstage .sb{font-size:11px;color:var(--mut);line-height:1.45;margin-top:6px;flex:1}
+  .lstage .so{font-size:11px;font-weight:700;color:var(--blue);margin-top:8px}
+  .startbanner{display:flex;align-items:center;gap:20px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;padding:20px 24px;margin-top:32px;text-decoration:none;cursor:pointer}
+  .startbanner h3{color:#fff;font-size:18px;margin:4px 0 3px}
+  .startbanner p{color:#cbd5e1;font-size:13px;margin:0;max-width:640px}
+  .startbanner .go{margin-left:auto;background:var(--blue);color:#fff;padding:12px 18px;border-radius:10px;font-weight:700;font-size:13.5px;white-space:nowrap}
+  .slides .slide{display:none}.slides .slide.on{display:block}
+  /* close calendar */
+  .cal{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
+  .day{border:1px solid var(--line);border-radius:10px;background:#fff;padding:9px;min-height:106px}
+  .day .dn{font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;margin-bottom:6px}
+  .day.today{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.18)}
+  .ws{font-size:10.5px;line-height:1.3;border-radius:6px;padding:4px 6px;margin-top:4px;font-weight:600}
+  .ws.done{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+  .ws.in_progress{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+  .ws.blocked{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+  .ws.pending{background:#f8fafc;color:#94a3b8;border:1px dashed #e2e8f0}
+  .ws.sii{background:#faf5ff;color:#6d28d9;border:1px solid #ddd6fe}
+  /* waterfall */
+  .wf{margin-top:8px}
+  .wfrow{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:12.5px}
+  .wfrow .wl{width:250px;flex-shrink:0}
+  .wfrow .wl small{color:#94a3b8;font-size:10px;margin-left:6px}
+  .wfrow .wbar{flex:1;height:16px;position:relative;background:#f1f5f9;border-radius:4px;overflow:hidden}
+  .wfrow .wbar i{position:absolute;top:0;bottom:0;border-radius:3px}
+  .wfrow .wv{width:110px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;flex-shrink:0}
+  .runbox{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px;margin-top:14px}
+  .runbox .rt{display:flex;align-items:center;gap:10px;font-weight:700;font-size:13.5px}
+  .tasktrail{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .tk{font-size:11px;border-radius:999px;padding:3px 10px;border:1px solid var(--line);background:#f8fafc;color:var(--mut)}
+  .tk.RUNNING{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .tk.SUCCESS{background:#f0fdf4;border-color:#bbf7d0;color:#15803d}
+  .tk.FAILED{background:#fef2f2;border-color:#fecaca;color:#dc2626}
+  svg.curve{width:100%;height:220px;background:#fff;border:1px solid var(--line);border-radius:10px}
+  .glo{columns:2;gap:24px;font-size:12.5px}
+  .glo div{break-inside:avoid;margin-bottom:9px}
+  .glo b{color:var(--ink)}
+  .qa{border:1px solid var(--line);border-radius:10px;background:#fff;padding:12px 14px;margin-bottom:8px}
+  .qa b{display:block;font-size:13px;margin-bottom:4px}
+  .qa .qa-a{font-size:12.5px;color:var(--mut);line-height:1.5}
+  .cov3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .cov3 .card ul{margin:6px 0 0;padding-left:16px;font-size:12px;color:var(--mut);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <a class="brand" onclick="go('home')">
+      <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></div>
+      <div class="btxt"><b>Bricksurance SE</b><span>IFRS 17 Workbench</span></div>
+    </a>
+    <nav class="nav" id="nav"></nav>
+    <div class="cachetog" style="padding-bottom:0"><button class="learnbtn" id="learnLink" onclick="go('learn')">🎓 LEARN · IFRS 17 IN TEN SLIDES</button></div>
+    <div class="cachetog"><button id="cacheBtn" onclick="toggleCache()"></button><div class="csub">AI narration only — every figure always computed live</div></div>
+    <div class="foot">
+      <button class="rbtn" id="resetBtn" onclick="resetDemo()">↺ Reset demo</button>
+      <div class="disc"><b>About this demo</b> — Bricksurance SE is a synthetic insurer; not a Databricks product and not accounting advice. Every figure is computed by governed engines on the lakehouse; the EIOPA discount curves are real publications.</div>
+    </div>
+  </aside>
+  <main class="main" id="m"><div class="loading">Loading…</div></main>
+</div>
+<div id="modalhost"></div>
+<script>
+"use strict";
+/* ---------- state + helpers ---------- */
+let CFG={}, CACHE_ON=(localStorage.getItem("i17_cache")??"1")==="1", PERIOD="2026Q2";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=n=>{if(n==null||isNaN(n))return "—";n=Number(n);const s=n<0?"−":"";n=Math.abs(n);
+  if(n>=1e6)return s+"€"+(n/1e6).toFixed(n>=1e8?0:1)+"m";if(n>=1e3)return s+"€"+(n/1e3).toFixed(n>=1e5?0:1)+"k";return s+"€"+n.toLocaleString(undefined,{maximumFractionDigits:0})};
+const moneyFull=n=>n==null||isNaN(n)?"—":(Number(n)<0?"−€":"€")+Math.abs(Number(n)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=n=>n==null?"—":Number(n).toLocaleString();
+const pct=n=>n==null?"—":Number(n).toFixed(1)+"%";
+async function api(p,opt){const sep=p.includes("?")?"&":"?";const r=await fetch("/api"+p+sep+"cache="+(CACHE_ON?1:0),opt);return r.json()}
+async function post(p,body){return api(p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})})}
+function pill(v,cls){return `<span class="pill ${cls||""}">${esc(v)}</span>`}
+function kv(k,v){return `<div class="kv"><span>${k}</span><b>${v}</b></div>`}
+function present(txt){return `<div class="present"><span class="ptag">On this page</span><span>${txt}</span></div>`}
+function tbl(rows,cols,fmt){if(!rows||!rows.length)return '<div class="muted">no rows</div>';
+  cols=cols||Object.keys(rows[0]);fmt=fmt||{};
+  return `<div class="tscroll"><table><thead><tr>${cols.map(c=>`<th class="${fmt[c]?'n':''}">${esc(c.replaceAll("_"," "))}</th>`).join("")}</tr></thead><tbody>`+
+    rows.map(r=>`<tr>${cols.map(c=>`<td class="${fmt[c]?'n':''}">${fmt[c]?fmt[c](r[c]):esc(r[c]??"—")}</td>`).join("")}</tr>`).join("")+"</tbody></table></div>"}
+function openModal(html){$("#modalhost").innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><button class="x" onclick="closeModal()">✕</button>${html}</div></div>`}
+function closeModal(){$("#modalhost").innerHTML=""}
+function toggleSql(id){const e=document.getElementById(id);e.style.display=e.style.display==="block"?"none":"block"}
+function showSqlBtn(id,sqlText){return `<div class="srcbar"><a class="lnk" onclick="toggleSql('${id}')">⌘ show the SQL / tables</a><div class="sqlbox" id="${id}">${esc(sqlText)}</div></div>`}
+function narrSlot(id){return `<div class="narr" id="${id}"><span class="tag">agent narration — LLMs narrate, SQL decides</span><span class="muted">…</span></div>`}
+function cacheBadge(c){return c==="hit"?pill("cached","amber"):c==="live"||c==="miss"?pill("live","green"):pill(c,"slatep")}
+
+/* ---------- nav ---------- */
+const NAV=[
+ {sec:"", items:[["home","Overview","◇"]]},
+ {sec:"Head of reporting", items:[["cockpit","Close Cockpit","▦"],["results","Results & Disclosures","▤"],["recon","Reconciliation","⇄"],["signoff","Sign-off & Audit","✓"]]},
+ {sec:"Results desk", items:[["groups","Contract Groups","▥"],["cohort","Cohort 360","◎"],["discount","Discount & Assumptions","∿"]]},
+ {sec:"Platform", items:[["ingestion","Ingestion","⇣"],["governance","Governance","🛡"],["ai","IFRS 17 AI","✳"],["insight","Insight","◉"]]},
+];
+let CUR="home", CUR_GID="PROP-2026-REM";
+function renderNav(){
+  $("#nav").innerHTML=NAV.map(g=>(g.sec?`<div class="sec">${g.sec}</div>`:"")+g.items.map(([k,l,ic])=>
+    `<a class="${CUR===k?"on":""}" onclick="go('${k}')"><span style="width:16px;text-align:center">${ic}</span>${l}</a>`).join("")).join("");
+  $("#learnLink").className="learnbtn"+(CUR==="learn"?" on":"");
+}
+function go(k,arg){location.hash=arg?`#${k}/${arg}`:`#${k}`}
+function route(){closeModal();
+  const h=(location.hash||"#home").slice(1); const [r,...rest]=h.split("/"); const arg=rest.join("/");
+  CUR=r; renderNav();
+  const map={home:landing,cockpit:cockpitPage,groups:groupsPage,cohort:()=>cohortPage(arg||CUR_GID),
+             discount:discountPage,results:resultsPage,recon:reconPage,signoff:signoffPage,
+             ingestion:ingestionPage,governance:governancePage,ai:aiPage,insight:insightPage,learn:learnPage};
+  (map[r]||landing)();
+  if(r==="cohort"&&arg)CUR_GID=arg;
+}
+window.addEventListener("hashchange",route);
+function toggleCache(){CACHE_ON=!CACHE_ON;localStorage.setItem("i17_cache",CACHE_ON?"1":"0");renderCacheBtn()}
+function renderCacheBtn(){const b=$("#cacheBtn");b.className=CACHE_ON?"cached":"live";b.textContent=CACHE_ON?"🗄 AI: CACHED":"📡 AI: LIVE"}
+async function resetDemo(){
+  if(!confirm("Regenerate the synthetic close (seed 42), rerun the pipeline and quarter close, re-warm the AI cache?"))return;
+  const b=$("#resetBtn");b.disabled=true;b.textContent="↺ Resetting…";
+  const r=await post("/levers/reset_demo");if(r.error){b.textContent="reset job not installed";b.disabled=false;return}
+  pollRun(r.run_id, s=>{b.textContent=s}, ()=>{b.textContent="✓ Reset complete";b.disabled=false});
+}
+function pollRun(runId,onTick,onDone){
+  const t0=Date.now();
+  const iv=setInterval(async()=>{
+    const s=await api("/levers/run/"+runId);
+    const el=Math.round((Date.now()-t0)/1000);
+    onTick&&onTick(`⏱ ${el}s — ${s.state}${s.result?(" / "+s.result):""}`,s);
+    if(["TERMINATED","INTERNAL_ERROR","SKIPPED"].includes(s.state)){clearInterval(iv);onDone&&onDone(s)}
+  },7000);
+  return iv;
+}
+
+/* ---------- landing ---------- */
+const L_STAGES=[
+ {n:"Day 1–2 · Every feed",t:"Ingest",b:"Policy admin, Guidewire claims, reserving projections, SAP GL, treaties, the expense workbook, FX and real EIOPA curves — one governed front door.",to:"ingestion",c:"#2563eb"},
+ {n:"Day 3 · The gate",t:"DQ & close gate",b:"Expectations + quarantine. A drifted reserving export BLOCKS the close visibly — nothing silently wrong ever reaches measurement.",to:"cockpit",c:"#0891b2"},
+ {n:"Day 4 · Assumptions",t:"Versioned & approved",b:"Every assumption is a governed record with an approver — the flood re-basis is v2, approved by the Chief Actuary, effective this run.",to:"discount",c:"#2563eb"},
+ {n:"Day 5 · THE ENGINES",t:"PAA · GMM · CSM · RA",b:"Real measurement: B96-ordered CSM roll-forwards, the §57 onerous test every quarter, discounting on real EIOPA curves, RA at CL-75.",to:"cohort",c:"#6d28d9"},
+ {n:"Day 6 · Books",t:"Post & reconcile",b:"Every movement posts balanced Dr/Cr to the subledger; the GL recon finds the one break and the approved journal clears it.",to:"recon",c:"#6d28d9"},
+ {n:"Day 7–8 · Numbers out",t:"Statements & AoC",b:"The §80 face, §101/§104 roll-forwards that foot to the balance sheet by construction, and a deterministic analysis of change.",to:"results",c:"#16a34a"},
+ {n:"Day 9–10 · Sign",t:"Sign-off & audit",b:"CFO signs against an evidence snapshot; any number is reproducible as-at via time travel. The audit trail is a join, not a project.",to:"signoff",c:"#d97706"},
+];
+function landing(){
+  const stages=L_STAGES.map(st=>`<a class="lstage" onclick="go('${st.to}')" style="border-top-color:${st.c}">
+    <div class="sn">${st.n}</div><div class="st">${st.t}</div><div class="sb">${st.b}</div>
+    <div class="so" style="color:${st.c}">open →</div></a>`).join("");
+  $("#m").innerHTML=`
+  <div class="lhero">
+    <span class="eyebrow">Bricksurance SE · IFRS 17 Workbench · Q2 2026 close</span>
+    <h1>The IFRS 17 close. One governed workbench.</h1>
+    <p class="lead">Every quarter, finance and actuarial teams squeeze a multi-system, spreadsheet-stitched close into ten working days — and then spend weeks explaining it to auditors. Here the whole close lives on one platform: every feed governed, every engine real, every number reproducible, both regimes on one calendar. Humans sign; everything is evidence.</p>
+    <div class="lcta">
+      <a class="primary" onclick="go('cockpit')">▦ Open the Close Cockpit →</a>
+      <a class="ghost" onclick="go('cohort','PROP-2026-REM')">🌊 The cohort that turned onerous</a>
+      <a class="ghost" onclick="go('signoff')">🔍 Reproduce a signed number</a>
+    </div>
+  </div>
+  <div class="about"><b>About this demo.</b> This is <b>not a Databricks product</b>. It is an example of a real business process — <b>the quarterly IFRS 17 close, feeds to sign-off</b> — built <b>purely on Databricks</b>: Unity Catalog, Lakeflow Declarative Pipelines, Auto Loader, Workflows, Delta time travel, MLflow, Mosaic AI Agent Framework, AI/BI Genie &amp; Dashboards, the Foundation Model API (Claude) and Databricks Apps. <b>Bricksurance SE is synthetic</b> — no real client data, and the measurement configuration is illustrative: the platform is methodology-agnostic and your actuaries own assumptions and methods. The <b>EIOPA risk-free curves are real publications</b>, labelled with provenance. Nothing here is accounting advice.</div>
+  <div class="lsec">
+    <div class="lh">↻ <h2>What this is — a quarter close, end to end</h2></div>
+    <p class="lhsub">Feeds land, gates open, engines measure, books balance, statements foot, a human signs — and the whole chain reruns in minutes when something changes. Click any stage to jump to where it lives.</p>
+    <div class="lstages">${stages}</div>
+  </div>
+  <a class="startbanner" onclick="go('cockpit')">
+    <div><div class="eyebrow" style="color:#93c5fd">Start here</div>
+    <h3>The Close Cockpit</h3><p>Day 1–10, IFRS 17 and Solvency II on one calendar, feeds, gates, and the levers that make the demo move — including breaking the close and repairing it live.</p></div>
+    <div class="go">Open →</div>
+  </a>`;
+}
+
+/* ---------- close cockpit ---------- */
+async function cockpitPage(){
+  $("#m").innerHTML=`<div class="eyebrow">Head of reporting</div><h1>Close Cockpit — ${PERIOD}</h1>
+  <p class="sub">The whole close on one screen: the Day 1–10 timetable (IFRS 17 <i>and</i> Solvency II), feed arrivals, the quality gate, and what the quarter says so far.</p>
+  ${present("The pain this kills: the close currently lives in status calls and a spreadsheet RAG. Here it IS the platform state — every chip below is written by the pipeline and engines as they run, not typed by a PMO.")}
+  <div id="cbody" class="loading">Loading…</div>`;
+  const d=await api("/cockpit");
+  const byDay={};(d.calendar||[]).forEach(c=>{(byDay[c.working_day]=byDay[c.working_day]||[]).push(c)});
+  const st={};(d.status||[]).forEach(s=>{st[s.working_day+"|"+s.workstream]={status:s.status,detail:s.detail}});
+  const days=[...Array(10)].map((_,i)=>{const day=i+1;
+    const items=(byDay[day]||[]).map(c=>{
+      const s=st[day+"|"+c.workstream]||{status:"pending",detail:""};
+      const cls=c.regime==="SII"?"sii "+s.status:s.status;
+      return `<div class="ws ${cls}" title="${esc(s.detail||c.task)}">${esc(c.workstream)}${c.regime==="SII"?" · SII":""}</div>`}).join("");
+    return `<div class="day ${day===7?"today":""}"><div class="dn">Day ${day}${day===7?" · today":""}</div>${items}</div>`}).join("");
+  const pnl={};(d.pnl||[]).forEach(r=>pnl[r.line_item]=r.amount);
+  const blocked=(d.status||[]).filter(s=>s.status==="blocked");
+  $("#cbody").innerHTML=`
+  <div class="cal">${days}</div>
+  ${blocked.length?`<div class="note"><b>⛔ Close blocked:</b> ${blocked.map(b=>esc(b.detail)).join(" · ")} — the gate stopped the run before measurement. Fix the feed and rerun; nothing wrong reached the engines.</div>`:""}
+  <div class="grid g4" style="margin-top:18px">
+    <div class="card"><h3>Insurance service result</h3><div class="big">${money(pnl["Insurance service result"])}</div><div class="muted">quarter to date, from the subledger</div></div>
+    <div class="card"><h3>Onerous groups</h3><div class="big" style="color:${(d.onerous||[]).length?"var(--red)":"var(--green)"}">${(d.onerous||[]).length}</div><div class="muted">${(d.onerous||[]).map(o=>`<a class="lnk" onclick="go('cohort','${o.group_id}')">${o.group_id}</a>`).join(" · ")||"none"}</div></div>
+    <div class="card"><h3>DQ pass rate</h3><div class="big">${pct(d.dq.pass_pct)}</div><div class="muted">${num(d.dq.expectations)} expectations · ${num(d.dq.failed_rows)} rows failed</div></div>
+    <div class="card"><h3>GL reconciliation</h3><div class="big">${d.recon.tied}/${d.recon.items}</div><div class="muted">items tied after journals</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Feeds — the governed front door</h3>
+      ${tbl(d.feeds,["feed","source_system","files","rows","status"],{rows:num,files:num})}
+      ${d.quarantine&&d.quarantine.length?`<div class="note" style="margin-top:10px"><b>Quarantine:</b> ${d.quarantine.map(q=>`${esc(q._source_file)} (${num(q.rows)} rows — ${esc(q.quarantine_reason)})`).join("; ")}</div>`:'<div class="muted" style="margin-top:8px">quarantine empty — gate open</div>'}
+    </div>
+    <div class="card"><h3>CFO close brief — agent</h3>
+      <button class="btn" onclick="cfoBrief()">✳ Write the brief</button>
+      ${narrSlot("brief")}
+      <div class="sech">Demo levers — break it, then fix it</div>
+      <button class="btn bad" onclick="lever('inject_bad_feed','Injecting the drifted reserving file…')">⚠ Inject bad reserving feed</button>
+      <button class="btn warn" onclick="lever('restore_feed','Removing the drifted file…')">♻ Restore feed</button>
+      <button class="btn good" onclick="lever('rerun_close','Re-running the quarter close…')">▶ Rerun the close</button>
+      <div id="leverbox"></div>
+      <div class="muted" style="margin-top:8px">Inject → rerun: watch the gate BLOCK Day 3. Restore → rerun: the full quarter re-produces in minutes — assumption to statements. That timer is the point.</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Engine runs this close — the audit trail writing itself</h3>
+    ${tbl(d.runs,["engine","run_id","status","finished_at"])}
+    ${showSqlBtn("sqlck","Backing tables: gld_close_status (written by every engine), ref_close_calendar, gld_feed_sla, gld_quarantine_summary, gld_dq_scorecard, gld_pnl_statement, gld_onerous_test, gld_trial_balance_recon, gov_run_audit.")}
+  </div>`;
+}
+async function cfoBrief(){const e=$("#brief");e.innerHTML='<span class="tag">cfo_brief agent</span><span class="muted">thinking…</span>';
+  const r=await post("/ai/brief",{cache:CACHE_ON?1:0});
+  e.innerHTML=`<span class="tag">cfo_brief agent ${cacheBadge(r.cache)}</span>${esc(r.text)}`}
+async function lever(name,label){const box=$("#leverbox");box.innerHTML=`<div class="runbox"><div class="rt">⏳ ${esc(label)}</div></div>`;
+  const r=await post("/levers/"+name);
+  if(r.error){box.innerHTML=`<div class="runbox"><div class="rt">⚠ ${esc(r.error)}</div></div>`;return}
+  box.innerHTML=`<div class="runbox"><div class="rt" id="lv-t">⏱ starting — ${esc(r.job)}</div><div class="tasktrail" id="lv-tasks"></div><div class="muted" style="margin-top:8px"><a class="lnk" href="#" id="lv-url" target="_blank">open the run in Workflows →</a></div></div>`;
+  pollRun(r.run_id,(txt,s)=>{ $("#lv-t").textContent=txt+" — "+esc(r.job);
+    if(s&&s.run_page_url)$("#lv-url").href=s.run_page_url;
+    if(s&&s.tasks)$("#lv-tasks").innerHTML=s.tasks.map(t=>`<span class="tk ${t.result||t.state}">${esc(t.task)}</span>`).join("");
+  },(s)=>{ $("#lv-t").textContent=(s.result==="SUCCESS"?"✓ done in ":"⚠ finished ("+(s.result||s.state)+") in ")+s.duration_seconds+"s";
+    if(name!=="inject_bad_feed")setTimeout(()=>cockpitPage(),1500);
+  });
+}
+
+/* ---------- ingestion ---------- */
+async function ingestionPage(){
+  $("#m").innerHTML=`<div class="eyebrow">Platform</div><h1>Ingestion — every close feed, one governed front door</h1>
+  <p class="sub">Nine live source types across five formats (CSV, JSON lines, XLSX, official regulator workbooks, in-app postings) — plus what production would connect. Nothing lands without expectations; nothing failing is silently lost.</p>
+  ${present("The pain this kills: the close inputs arrive as emails, SFTP drops and spreadsheets into five different tools. Here every feed lands on one Volume, through one declarative pipeline, with drift caught at the door — the actuarial handoff included.")}
+  <div id="ibody" class="loading">Loading…</div>`;
+  const d=await api("/ingestion");
+  const groups={};(d.sources||[]).forEach(s=>{(groups[s.source_group]=groups[s.source_group]||[]).push(s)});
+  const gh=Object.entries(groups).map(([g,rows])=>`
+    <div class="card" style="margin-bottom:14px"><h3>${esc(g)}</h3>
+    ${tbl(rows,["source","system","format","cadence","databricks_tool","status","row_count","note"],{row_count:num})}
+    </div>`).join("");
+  $("#ibody").innerHTML=`
+  ${gh}
+  <div class="grid g2">
+    <div class="card"><h3>Quarantine — nothing silently lost</h3>
+      ${tbl(d.quarantine,["_source_file","quarantine_reason","rows"],{rows:num})}
+      ${d.quarantine_sample&&d.quarantine_sample.length?`<div class="sech">What the drift looks like (rescued raw values)</div>${tbl(d.quarantine_sample)}`:""}
+      <div class="muted" style="margin-top:8px">The drifted reserving export renamed <span class="mono">projection_month→month</span> and dropped <span class="mono">cf_type</span>. Auto Loader rescued the raw values; the rows quarantined; the close gate blocked. That's the actuarial→finance handoff, governed.</div>
+    </div>
+    <div class="card"><h3>Data-quality expectations (from the pipeline event log)</h3>
+      ${tbl(d.dq,["dataset","expectation","action","passed","failed","pass_pct"],{passed:num,failed:num,pass_pct:pct})}
+    </div>
+  </div>`;
+}
+
+/* ---------- contract groups ---------- */
+async function groupsPage(){
+  $("#m").innerHTML=`<div class="eyebrow">Results desk</div><h1>Contract groups — §16–24 units of account</h1>
+  <p class="sub">Portfolio → profitability bucket → annual cohort, fixed at initial recognition. A group that turns onerous raises a loss component <i>inside</i> the group — it never re-buckets.</p>
+  ${present("The pain this kills: onerous monitoring is a year-end scramble. Here the §57 test runs EVERY quarter on every PAA group — the headroom trend below is the early warning a CRO wants between closes.")}
+  <div id="gbody" class="loading">Loading…</div>`;
+  const d=await api("/groups");
+  const rows=(d.groups||[]).map(g=>({...g,_hot:g.onerous==="true"||g.onerous===true}));
+  const fmt={gwp:money,lrc_carrying:money,loss_component:money,csm:money,risk_adjustment:money,bs_lrc_total:money,headroom:money,revenue_in_quarter:money,policies:num};
+  const cols=["group_id","measurement_model","profitability_bucket","policies","gwp","bs_lrc_total","csm","loss_component","risk_adjustment","headroom","revenue_in_quarter"];
+  const html=`<div class="tscroll"><table><thead><tr>${cols.map(c=>`<th>${esc(c.replaceAll("_"," "))}</th>`).join("")}<th></th></tr></thead><tbody>`+
+    rows.map(r=>`<tr class="click ${r._hot?"hot":""}" onclick="go('cohort','${r.group_id}')">${cols.map(c=>`<td>${fmt[c]?fmt[c](r[c]):esc(r[c]??"—")}</td>`).join("")}<td>${r._hot?pill("ONEROUS","red"):(r.measurement_model==="GMM"?pill("CSM","bluep"):(r.measurement_model==="LIC_ONLY"?pill("run-off","slatep"):pill("PAA","slatep")))}</td></tr>`).join("")+"</tbody></table></div>";
+  const watch={};(d.watch||[]).forEach(w=>{(watch[w.group_id]=watch[w.group_id]||[]).push(w)});
+  const trend=Object.entries(watch).map(([gid,ws])=>{
+    const last=ws[ws.length-1];
+    const spark=ws.map(w=>{const h=Number(w.headroom_pct)*100;const c=w.onerous==="true"||w.onerous===true?"#dc2626":(h<15?"#d97706":"#16a34a");
+      return `<i title="${w.close_period}: headroom ${pct(h)}" style="display:inline-block;width:9px;margin-right:2px;border-radius:2px;background:${c};height:${Math.max(4,Math.min(26,Math.abs(h)/3+4))}px;vertical-align:bottom;${h<0?"outline:2px solid #fecaca":""}"></i>`}).join("");
+    return `<tr class="click" onclick="go('cohort','${gid}')"><td>${gid}</td><td>${spark}</td><td class="n">${money(last.headroom)}</td><td>${esc(last.watch_status)}</td></tr>`}).join("");
+  $("#gbody").innerHTML=`
+  <div class="card">${html}</div>
+  <div class="card" style="margin-top:16px"><h3>Onerous early-warning — §57 headroom, every quarter (PAA groups)</h3>
+    <table><thead><tr><th>group</th><th>headroom trend (10 quarters)</th><th class="n">headroom now</th><th>status</th></tr></thead><tbody>${trend}</tbody></table>
+    <div class="muted" style="margin-top:8px">Watch PROP-2025 / PROP-2026 collapse into breach at 2026Q2 — the flood assumption re-basis. VFA measurement: <span class="pill slatep">Phase 2</span> (this book has no direct-participation business).</div>
+  </div>`;
+}
+
+/* ---------- cohort 360 ---------- */
+const STEP_LABELS={opening:"Opening balance",new_business:"New business",interest_accretion:"Interest accretion (locked-in)",experience_adjustments:"Experience adjustments",fcf_changes_future_service:"FCF changes — future service",fx:"FX",csm_release:"Release (coverage units)",closing:"Closing balance"};
+async function cohortPage(gid){
+  CUR_GID=gid;
+  $("#m").innerHTML=`<div class="eyebrow">Results desk · ${esc(gid)}</div><h1>Cohort 360</h1>
+  <p class="sub">Everything the results desk needs on one group: the measurement, why it moved, the assumptions as approved, and the source records behind it.</p>
+  <div id="cobody" class="loading">Loading…</div>`;
+  const d=await api("/cohort/"+encodeURIComponent(gid));
+  const s=(d.summary||[])[0]||{};
+  const isGMM=s.measurement_model==="GMM", isRO=s.measurement_model==="LIC_ONLY";
+  const onr=s.onerous==="true"||s.onerous===true;
+  const selector=`<select class="f" style="width:auto;display:inline-block;margin-left:10px" onchange="go('cohort',this.value)">
+    ${["PROP-2026-REM","PROP-2025-REM","PROP-2024-REM","MOT-2026-REM","MOT-2025-REM","LIAB-2025-REM","CLT-2025-NSP","CLT-2024-NSP","DEC-2025-NSP","RO-2020-LIC","RO-2021-LIC"].map(g=>`<option ${g===gid?"selected":""}>${g}</option>`).join("")}</select>`;
+
+  // CSM waterfall at current close (GMM)
+  let waterfall="";
+  if(isGMM){
+    const steps=(d.csm||[]).filter(r=>r.close_period===PERIOD);
+    const maxv=Math.max(...steps.map(r=>Math.abs(Number(r.amount)||0)),1);
+    waterfall=`<div class="card"><h3>CSM waterfall — ${PERIOD} · strict B96 ordering</h3><div class="wf">`+
+      steps.map(r=>{const v=Number(r.amount)||0;const w=Math.abs(v)/maxv*100;
+        const col=r.step==="opening"||r.step==="closing"?"#1e293b":(v>=0?"#2563eb":"#dc2626");
+        return `<div class="wfrow"><div class="wl">${STEP_LABELS[r.step]||r.step}<small>¶${esc(r.paragraph||"")}</small></div>
+          <div class="wbar"><i style="left:0;width:${Math.max(w,1)}%;background:${col};opacity:${r.step==="opening"||r.step==="closing"?1:.85}"></i></div>
+          <div class="wv">${moneyFull(v)}</div></div>`}).join("")+
+      `</div><div class="muted" style="margin-top:8px">Release is applied LAST, on the post-adjustment balance, by coverage units — and accretion is at the <b>locked-in</b> curve (${esc(s.locked_in_curve_date||"")}), so current-rate moves never touch this waterfall (they live in OCI).</div>
+      ${showSqlBtn("sqlcsm","SELECT step, amount, paragraph FROM gld_csm_rollforward WHERE group_id='"+gid+"' AND close_period='"+PERIOD+"' -- produced by 04d_gmm_csm_engine (driver pandas, deterministic)")}</div>`;
+  }
+  // PAA LRC + onerous panel
+  let paa="";
+  if(!isGMM&&!isRO){
+    const lrcq=(d.lrc||[]).filter(r=>r.close_period===PERIOD);
+    const ot=(d.onerous||[]).filter(r=>r.close_period===PERIOD)[0]||{};
+    const lc=(d.lc||[]).filter(r=>r.close_period===PERIOD);
+    paa=`<div class="grid g2">
+    <div class="card"><h3>PAA LRC roll-forward — ${PERIOD} (undiscounted per §56)</h3>
+      ${lrcq.map(r=>kv(({opening:"Opening",premiums_received:"Premiums received",insurance_revenue:"Insurance revenue (earned)",acq_cashflows_paid:"Acquisition cash flows",acq_amortisation:"Acquisition amortisation",closing:"Closing"})[r.step]||r.step,moneyFull(r.amount))).join("")}
+      <div class="muted" style="margin-top:8px">No CSM on this group — PAA has none, ever. Insurance revenue is earned coverage, not written premium.</div></div>
+    <div class="card" style="${onr?"border-color:#fecaca;background:#fff7f7":""}"><h3>§57 onerous test — ${PERIOD} ${onr?pill("BREACH","red"):pill("headroom OK","green")}</h3>
+      ${kv("LRC carrying amount",moneyFull(ot.lrc_carrying))}
+      ${kv("FCF remaining coverage (current rates + RA)",moneyFull(ot.fcf_remaining_current))}
+      ${kv("Headroom",`<span style="color:${Number(ot.headroom)<0?"var(--red)":"var(--green)"}">${moneyFull(ot.headroom)}</span>`)}
+      ${lc.filter(r=>r.step!=="opening").map(r=>kv("Loss component — "+r.step.replaceAll("_"," "),moneyFull(r.amount))).join("")}
+      <div class="muted" style="margin-top:8px">The test runs a GMM-style FCF <i>inside</i> the PAA book — that's the standard, and it's why continuous monitoring matters. ${onr?"The flood re-basis (assumption v2 below) pushed forward claims above the carrying LRC.":""}</div></div>
+    </div>`;
+  }
+  // AvE
+  const aveq=(d.ave||[]).filter(r=>r.close_period===PERIOD)[0];
+  const ave=aveq?`<div class="card" style="margin-top:16px"><h3>Analysis of change — ${PERIOD} · deterministic (the auditor split)</h3>
+    <div class="grid g3">
+      <div><div class="muted">PAST SERVICE — what happened</div>
+        ${kv("Expected claims (prior reserving view)",moneyFull(aveq.expected_claims_prior_view))}
+        ${kv("Incurred as measured (disc. + RA)",moneyFull(aveq.incurred_measured))}
+        ${kv("Experience variance",`<span style="color:${Number(aveq.experience_variance)>0?"var(--red)":"var(--green)"}">${moneyFull(aveq.experience_variance)}</span>`)}
+        ${kv("Prior-year development",moneyFull(aveq.past_service_changes))}</div>
+      <div><div class="muted">FUTURE SERVICE — what we now expect</div>
+        ${kv("Assumption changes (LC + CSM unlock)",moneyFull(aveq.assumption_changes_future_service))}</div>
+      <div><div class="muted">FINANCE — the time value</div>
+        ${kv("Unwind of discount",moneyFull(aveq.unwind_ifie))}
+        ${kv("Rate changes",moneyFull(aveq.rate_change_ifie))}</div>
+    </div>
+    <div class="muted" style="margin-top:8px">${esc(aveq.note||"")}</div>
+    ${narrSlot("narr")}
+    <button class="btn" style="margin-top:10px" onclick="narrate('${gid}')">✳ Explain this movement (movement_narrator)</button></div>`:"";
+  // assumptions
+  const asum=(d.assumptions||[]).map(a=>{
+    const active=a.status==="active"&&String(a.effective_from_run)==="2026Q2";
+    return `<tr class="${active?"hot":""}"><td>${esc(a.assumption_id)}</td><td>v${a.version}</td><td class="mono">${esc(a.value_json)}</td><td>${esc(a.approved_by)}</td><td>${esc(a.approved_at)}</td><td>${esc(a.effective_from_run)}</td><td>${a.status==="active"?pill("active","green"):pill(a.status,"slatep")}</td></tr>`}).join("");
+  // source claims
+  const claims=d.source_claims&&d.source_claims.length?`<div class="card" style="margin-top:16px"><h3>Drill to source — the June 2026 flood claims (largest 12 of the event)</h3>
+    ${tbl(d.source_claims,["claim_id","loss_date","peril","status","paid_to_date","case_reserve","region"],{paid_to_date:money,case_reserve:money})}
+    <div class="muted" style="margin-top:8px">P&amp;L charge → onerous test → approved assumption v2 → these claims. Four clicks, one platform — that's the drill an auditor asks for.</div></div>`:"";
+  // RI
+  const ri=(d.ri||[]).length?`<div class="card" style="margin-top:16px"><h3>Reinsurance held — ${PERIOD} (30% property quota share)</h3>
+    ${(d.ri||[]).map(r=>kv(r.component.replaceAll("_"," ")+(r.component==="loss_recovery_component"?" ⭐":""),moneyFull(r.amount))).join("")}
+    <div class="muted" style="margin-top:8px">Reinsurance held is never onerous — it carries a <b>loss-recovery component</b> offsetting the gross loss component. Gross hit, recovery, net: one screen. The cat XL is data-only (the floods sit below its attachment).</div></div>`:"";
+  // coverage units (GMM)
+  const cu=(d.units||[]).filter(r=>r.close_period===PERIOD)[0];
+  const cuCard=isGMM&&cu?`<div class="card"><h3>Coverage units — ${PERIOD}</h3>
+    ${kv("Units provided in period (EUR m-years)",num(cu.units_in_period))}
+    ${kv("Units remaining",num(cu.units_remaining))}
+    ${kv("Release fraction",pct(Number(cu.release_fraction)*100))}
+    ${kv("CSM released to revenue",moneyFull(cu.csm_release))}
+    <div class="muted" style="margin-top:8px">${esc(cu.basis||"")} — the basis is a versioned assumption.</div></div>`:"";
+  const disc=(d.discount||[]).filter(r=>r.close_period===PERIOD)[0];
+  const discCard=isGMM&&disc?`<div class="card"><h3>Locked-in vs current — OCI</h3>
+    ${kv("FCF at locked-in",moneyFull(disc.fcf_locked_in))}
+    ${kv("FCF at current",moneyFull(disc.fcf_current))}
+    ${kv("OCI balance",moneyFull(disc.oci_balance))}
+    ${kv("OCI in period",moneyFull(disc.oci_in_period))}</div>`:"";
+  const lic=(d.lic||[]).length?`<div class="card" style="margin-top:16px"><h3>LIC — ${esc(s.portfolio_id)} portfolio, ${PERIOD} (discounted + RA, by accident year)</h3>
+    ${tbl(d.lic,["accident_year","step","amount"],{amount:moneyFull})}</div>`:"";
+
+  $("#cobody").innerHTML=`
+  <div style="margin-bottom:14px">Group ${selector} ${onr?pill("ONEROUS at "+PERIOD,"red"):""} ${pill(s.measurement_model||"?", isGMM?"bluep":"slatep")} ${pill("bucket "+(s.profitability_bucket||"?"),"slatep")} ${s.locked_in_curve_date?pill("locked-in "+s.locked_in_curve_date,"violetp"):""}</div>
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="card"><h3>GWP (cohort)</h3><div class="big">${money(s.gwp)}</div><div class="muted">${num(s.policies)} policies</div></div>
+    <div class="card"><h3>Balance-sheet LRC</h3><div class="big">${money(s.bs_lrc_total)}</div><div class="muted">${isGMM?"FCF current + CSM":"PAA carrying + LC"}</div></div>
+    <div class="card"><h3>${isGMM?"CSM":"Loss component"}</h3><div class="big" style="color:${onr?"var(--red)":"var(--ink)"}">${money(isGMM?s.csm:s.loss_component)}</div><div class="muted">${isGMM?"unearned profit":"recognised in ISE"}</div></div>
+    <div class="card"><h3>Risk adjustment</h3><div class="big">${money(s.risk_adjustment)}</div><div class="muted">CL 75%, lognormal</div></div>
+  </div>
+  ${waterfall}${paa}
+  <div class="grid g2" style="margin-top:16px">${cuCard}${discCard}</div>
+  ${ave}
+  <div class="card" style="margin-top:16px"><h3>Assumptions as approved — the registry (v2 rows are this quarter's story)</h3>
+    <table><thead><tr><th>assumption</th><th>version</th><th>value</th><th>approved by</th><th>approved</th><th>effective run</th><th></th></tr></thead><tbody>${asum}</tbody></table></div>
+  ${claims}${ri}${lic}`;
+}
+async function narrate(gid){const e=$("#narr");e.innerHTML='<span class="tag">movement_narrator</span><span class="muted">thinking…</span>';
+  const r=await post("/cohort/"+encodeURIComponent(gid)+"/narrate",{cache:CACHE_ON?1:0});
+  e.innerHTML=`<span class="tag">movement_narrator ${cacheBadge(r.cache)} · findings computed by UC functions, narrated by Claude</span>${esc(r.text)}`}
+
+/* ---------- discount & assumptions ---------- */
+async function discountPage(){
+  $("#m").innerHTML=`<div class="eyebrow">Results desk</div><h1>Discount &amp; assumptions</h1>
+  <p class="sub">Real EIOPA publications + an illiquidity premium the entity owns. Locked-in per cohort; current at the reporting date; the difference is OCI.</p>
+  ${present("Illustrative configuration — the platform is methodology-agnostic. Your actuaries own the curve construction; the workbench makes it versioned, governed and reproducible. The base curves below are REAL EIOPA files, unmodified (provenance in the repo).")}
+  <div id="dbody" class="loading">Loading…</div>`;
+  const d=await api("/discount");
+  const dates=[...new Set((d.spots||[]).map(r=>r.curve_date))].sort();
+  const colors={"2023-12-31":"#94a3b8","2024-12-31":"#60a5fa","2025-12-31":"#2563eb","2026-03-31":"#d97706","2026-06-30":"#16a34a"};
+  // svg curve chart
+  const W=900,H=220,P=34;
+  const all=(d.spots||[]).map(r=>Number(r.spot_rate));
+  const ymin=Math.min(...all),ymax=Math.max(...all);
+  const x=m=>P+(m-1)/(30-1)*(W-2*P), y=v=>H-P-((v-ymin)/(ymax-ymin||1))*(H-2*P);
+  const paths=dates.map(cd=>{
+    const pts=(d.spots||[]).filter(r=>r.curve_date===cd).map(r=>`${x(r.maturity_years).toFixed(1)},${y(Number(r.spot_rate)).toFixed(1)}`).join(" ");
+    return `<polyline fill="none" stroke="${colors[cd]||"#64748b"}" stroke-width="2" points="${pts}"/>`}).join("");
+  const legend=dates.map(cd=>`<span style="margin-right:14px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${colors[cd]||"#64748b"};margin-right:5px"></span>${cd}</span>`).join("");
+  const meta=(d.meta||[]).map(mm=>`<tr><td>${esc(mm.curve_date)}</td><td class="n">${(Number(mm.ufr)).toFixed(2)}%</td><td class="n">${mm.llp}y</td><td class="n">${mm.convergence}y</td><td class="n">${mm.cra_bps}bps</td><td class="mono">${esc(mm.source_file)}</td></tr>`).join("");
+  const ilp=d.ilp&&d.ilp[0]?JSON.parse(d.ilp[0].value_json):{};
+  $("#dbody").innerHTML=`
+  <div class="grid g2">
+    <div class="card"><h3>EUR risk-free spot curves — the five real publications</h3>
+      <svg class="curve" viewBox="0 0 ${W} ${H}">${paths}
+        <text x="${P}" y="${H-8}" font-size="10" fill="#94a3b8">1y</text><text x="${W-P-16}" y="${H-8}" font-size="10" fill="#94a3b8">30y</text>
+        <text x="4" y="${y(ymax)+4}" font-size="10" fill="#94a3b8">${(ymax*100).toFixed(1)}%</text><text x="4" y="${y(ymin)+4}" font-size="10" fill="#94a3b8">${(ymin*100).toFixed(1)}%</text></svg>
+      <div class="muted" style="margin-top:8px">${legend}</div>
+      <table style="margin-top:10px"><thead><tr><th>publication</th><th class="n">UFR</th><th class="n">LLP</th><th class="n">convergence</th><th class="n">CRA</th><th>file</th></tr></thead><tbody>${meta}</tbody></table>
+    </div>
+    <div class="card"><h3>IFRS 17 rate = EIOPA base + illiquidity premium (versioned)</h3>
+      ${Object.entries(ilp).map(([p,v])=>kv(p+" portfolio","+"+v+" bps")).join("")}
+      <div class="muted" style="margin-top:8px">Approved ${esc(d.ilp&&d.ilp[0]?d.ilp[0].approved_by:"")} · ${esc(d.ilp&&d.ilp[0]?d.ilp[0].approved_at:"")} — Solvency II discounts at the pure EIOPA curve; IFRS 17 does not. The crosswalk computes that difference for real (Reconciliation page).</div>
+      <div class="sech">Locked-in mapping</div>
+      ${tbl(d.mapping,["group_id","locked_in_curve_date"])}
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Live what-if — shift the current curve</h3>
+    <button class="btn" onclick="whatif(100)">▲ +100 bps</button>
+    <button class="btn ghost" onclick="whatif(-50)">▼ −50 bps</button>
+    <button class="btn ghost" onclick="whatif(200)">▲ +200 bps</button>
+    <div id="wi" class="muted" style="margin-top:10px">Re-PVs every remaining cash flow on the warehouse, live — seconds, not a monthly cycle.</div>
+  </div>`;
+}
+async function whatif(bps){const e=$("#wi");e.innerHTML="Recomputing every PV at "+(bps>0?"+":"")+bps+" bps…";
+  const t0=Date.now();const r=await post("/whatif/rates",{bps});const el=((Date.now()-t0)/1000).toFixed(1);
+  e.innerHTML=`<div class="grid g3" style="margin-top:6px">
+    <div class="card"><h3>LIC (PV of incurred claims)</h3>${kv("now",moneyFull(r.lic_pv_now))}${kv("shifted",moneyFull(r.lic_pv_shifted))}${kv("Δ",`<span style="color:var(--blue)">${moneyFull((r.lic_pv_shifted||0)-(r.lic_pv_now||0))}</span>`)}</div>
+    <div class="card"><h3>LRC remaining coverage (PV)</h3>${kv("now",moneyFull(r.lrc_pv_now))}${kv("shifted",moneyFull(r.lrc_pv_shifted))}${kv("Δ",`<span style="color:var(--blue)">${moneyFull((r.lrc_pv_shifted||0)-(r.lrc_pv_now||0))}</span>`)}</div>
+    <div class="card" style="border-color:#bbf7d0;background:#f0fdf4"><h3>CSM</h3><div class="big">${money(r.csm_closing_unchanged)}</div><div class="muted"><b>unchanged</b> — accretion is locked-in; rate moves land in P&amp;L/OCI, not the CSM. That's the detail experts check.</div></div>
+  </div><div class="muted" style="margin-top:8px">computed live in ${el}s · ${esc(r.note||"")}</div>`}
+
+/* ---------- results & disclosures ---------- */
+async function resultsPage(){
+  $("#m").innerHTML=`<div class="eyebrow">Head of reporting</div><h1>Results &amp; disclosures — ${PERIOD}</h1>
+  <p class="sub">The §80 statement face, the §101/§104 roll-forwards, the RA disclosure and the revenue decomposition — all derived from the subledger postings, so they foot to the balance sheet by construction.</p>
+  ${present("Watch the language: INSURANCE REVENUE, never premium, on the face. GWP is a KPI on other pages, not a statement line — that single word is where IFRS 17 credibility is won or lost.")}
+  <div id="rbody" class="loading">Loading…</div>`;
+  const d=await api("/results");
+  const plq=(d.pnl||[]).filter(r=>r.close_period===PERIOD);
+  const plTrend={};(d.pnl||[]).forEach(r=>{if(r.line_item==="Insurance service result")plTrend[r.close_period]=Number(r.amount)});
+  const trendHtml=Object.entries(plTrend).map(([q,v])=>`<i title="${q}: ${money(v)}" style="display:inline-block;width:16px;margin-right:3px;border-radius:2px;background:${v>=0?"#16a34a":"#dc2626"};height:${Math.max(4,Math.min(40,Math.abs(v)/3e5))}px;vertical-align:bottom"></i>`).join("");
+  const d101={};(d.d101||[]).forEach(r=>{(d101[r.line]=d101[r.line]||{})[r.component]=Number(r.amount)});
+  const lines101=Object.entries(d101).map(([l,c])=>`<tr class="${l==="Closing balance"||l==="Opening balance"?"hot":""}"><td>${esc(l)}</td><td class="n">${moneyFull(c.lrc_excl_lc)}</td><td class="n">${moneyFull(c.loss_component)}</td><td class="n">${moneyFull(c.lic)}</td><td class="n">${moneyFull((c.lrc_excl_lc||0)+(c.loss_component||0)+(c.lic||0))}</td></tr>`).join("");
+  const d104={};(d.d104||[]).forEach(r=>{(d104[r.component]=d104[r.component]||[]).push(r)});
+  const comp104=Object.entries(d104).map(([comp,rows])=>`<div class="card"><h3>${comp.replaceAll("_"," ")}</h3>${rows.map(r=>kv(r.line,moneyFull(r.amount))).join("")}</div>`).join("");
+  $("#rbody").innerHTML=`
+  <div class="grid g2">
+    <div class="card"><h3>Statement of profit or loss — §80 face</h3>
+      ${plq.map(r=>kv((r.line_no==4||r.line_no==7?"<b>"+esc(r.line_item)+"</b>":esc(r.line_item)),(r.line_no==4||r.line_no==7?"<b>"+moneyFull(r.amount)+"</b>":moneyFull(r.amount)))).join("")}
+      <div class="sech">Insurance service result by quarter</div><div>${trendHtml}</div>
+      <div class="sech">Insurance revenue decomposition</div>
+      ${(d.revenue||[]).map(r=>kv(r.component.replaceAll("_"," "),moneyFull(r.amount))).join("")}
+    </div>
+    <div class="card"><h3>Balance sheet — ${PERIOD}</h3>
+      ${(d.bs||[]).map(r=>kv(esc(r.line_item)+" <span class='muted'>("+r.side+")</span>",moneyFull(r.amount))).join("")}
+      <div class="muted" style="margin-top:8px">Assets = liabilities + equity to the cent — the statements are re-presentations of balanced postings.</div>
+      <div class="sech">Deliverables</div>
+      <a class="btn" href="/api/results/pack">⬇ Board pack (Excel, 8 sheets)</a>
+      <button class="btn ghost" onclick="draftNote('loss_component')">✳ Draft the loss-component note</button>
+      <button class="btn ghost" onclick="draftNote('risk_adjustment')">✳ Draft the RA note</button>
+      ${narrSlot("noteout")}
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>§100–103 roll-forward by liability component (foots to the balance sheet)</h3>
+    <table><thead><tr><th></th><th class="n">LRC excl. LC</th><th class="n">Loss component</th><th class="n">LIC</th><th class="n">Total</th></tr></thead><tbody>${lines101}</tbody></table>
+    ${showSqlBtn("sql101","SELECT component, line, amount FROM gld_disclosure_lrc_lic WHERE close_period='"+PERIOD+"' -- derived FROM gld_subledger_postings: it IS the balance sheet, re-presented")}</div>
+  <div class="sech">§104 analysis by measurement component</div>
+  <div class="grid g4">${comp104}</div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Risk adjustment roll-forward — disclosed CL 75%</h3>${tbl(d.ra,["close_period","opening","net_change","closing"],{opening:money,net_change:money,closing:money})}</div>
+    <div class="card"><h3>ML challenger — ultimates vs the reserving view</h3>
+      ${tbl(d.ml,["portfolio_id","accident_quarter","ml_ultimate","reserving_ultimate","divergence_pct"],{ml_ultimate:money,reserving_ultimate:money,divergence_pct:pct})}
+      <div class="muted" style="margin-top:8px">A LightGBM view from paid development — a divergence flag for the results desk, <b>never the booked number</b>. Registered in UC; in the model register.</div></div>
+  </div>`;
+}
+async function draftNote(topic){const e=$("#noteout");e.innerHTML='<span class="tag">disclosure_drafter</span><span class="muted">drafting…</span>';
+  const r=await post("/results/note",{topic,cache:CACHE_ON?1:0});
+  e.innerHTML=`<span class="tag">disclosure_drafter ${cacheBadge(r.cache)} · figures from the engines, words from the agent</span>${esc(r.text)}`}
+
+/* ---------- recon ---------- */
+async function reconPage(){
+  $("#m").innerHTML=`<div class="eyebrow">Head of reporting</div><h1>Reconciliation — subledger ⇄ GL ⇄ Solvency II</h1>
+  <p class="sub">The subledger posts balanced pairs; the GL recon finds the one real break; the crosswalk shows the same FCF dataset feeding both regimes — with the differences labelled, not hidden.</p>
+  ${present("The pain this kills: recon items live in spreadsheets emailed at 7pm on Day 6. Here the break is found, explained, journal-cleared and evidenced in one governed surface — and the journal identities are masked by Unity Catalog itself.")}
+  <div id="rcbody" class="loading">Loading…</div>`;
+  const d=await api("/recon");
+  $("#rcbody").innerHTML=`
+  <div class="card"><h3>Trial-balance recon — ${PERIOD}</h3>
+    ${tbl(d.recon,["recon_item","gl_account","subledger_amount","gl_amount","raw_difference","journal_adjustment","journal_id","residual","status"],
+      {subledger_amount:moneyFull,gl_amount:moneyFull,raw_difference:moneyFull,journal_adjustment:moneyFull,residual:moneyFull})}
+    <div class="muted" style="margin-top:8px">The €412,340.00 break: SAP booked attributable claims-ops cost to other opex (a cost-centre mapping slip). The recon caught it; the approved reclass journal cleared it; the residuals read zero. Technical IFRS 17 accounts have no external recon target — the subledger IS the system of record for those.</div></div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Manual journals — via <span class="mono">gov_journal_secure</span> (UC masking)</h3>
+      ${tbl(d.journals,["journal_id","period","gl_account_dr","gl_account_cr","amount_eur","narrative","posted_by","approved_by","status"],{amount_eur:moneyFull})}
+      <div class="prov">The poster/approver identities read <b>masked</b> because the app's service principal is deliberately OUTSIDE <span class="mono">ifrs17_finance_controllers</span> — the redaction is Unity Catalog row-level logic, not app code. Same query as a group member shows the names.</div>
+      <div class="sech">Post a journal (lands as a governed feed file)</div>
+      <label class="f">Amount (EUR)</label><input class="f" id="jamt" value="12500.00">
+      <label class="f">Narrative</label><input class="f" id="jnar" value="Late accrual adjustment — demo">
+      <button class="btn" style="margin-top:10px" onclick="postJournal()">Post journal</button>
+      <div id="jout" class="muted" style="margin-top:8px"></div>
+    </div>
+    <div class="card"><h3>Solvency II crosswalk — one FCF dataset, two regimes</h3>
+      ${tbl((d.crosswalk||[]).filter(r=>Number(r.amount)!==0||r.item.includes("note")),["portfolio_id","item","amount","note"],{amount:moneyFull})}
+      <div class="muted" style="margin-top:8px">The ILP effect is COMPUTED (both curves are real). The risk margin and boundary rows are labelled differences — the numbers are never pretended equal. The QRT side lives in the sibling Solvency II workbench.</div></div>
+  </div>`;
+}
+async function postJournal(){const r=await post("/journals",{amount_eur:$("#jamt").value,narrative:$("#jnar").value,gl_account_dr:"5040",gl_account_cr:"7000"});
+  $("#jout").textContent=r.journal_id?("✓ "+r.journal_id+" landed — "+r.note):("⚠ "+JSON.stringify(r))}
+
+/* ---------- sign-off & audit ---------- */
+async function signoffPage(){
+  $("#m").innerHTML=`<div class="eyebrow">Head of reporting</div><h1>Sign-off &amp; audit — ${PERIOD}</h1>
+  <p class="sub">The CFO signs against an evidence snapshot: key figures, engine runs, pinned input versions, approved assumptions. Then reproduce any signed number, as-at, live.</p>
+  ${present("The 'I want this' moment for auditors: pick a signed number and REPRODUCE it — same inputs (Delta time travel), same assumptions (registry versions), same engine. Reperformance requests that take weeks become a click.")}
+  <div id="sbody" class="loading">Loading…</div>`;
+  const d=await api("/signoff");
+  $("#sbody").innerHTML=`
+  <div class="grid g2">
+    <div class="card"><h3>Approvals</h3>
+      ${tbl(d.approvals,["workstream","decision","approver","comment","approved_at"])}
+      <div class="sech">Approve a workstream</div>
+      <select class="f" id="apws"><option>Measurement</option><option>Postings & recon</option><option>Disclosures</option><option>CFO sign-off</option></select>
+      <input class="f" id="apwho" value="cfo@bricksurance.example" style="margin-top:8px">
+      <button class="btn" style="margin-top:10px" onclick="approveWs()">✓ Approve</button>
+      <button class="btn good" style="margin-top:10px" onclick="makeCert()">🖋 Generate sign-off certificate (PDF)</button>
+      <div id="apout" class="muted" style="margin-top:8px"></div>
+      <div class="sech">Certificates</div>
+      ${(d.certificates||[]).map(c=>`<div class="kv"><span>${esc(c.certificate_id)} · ${esc(c.signed_by)}</span><b><a class="lnk" href="/api/certificate/${esc(c.certificate_id)}">PDF ⬇</a> <span class="mono" title="${esc(c.sha256)}">sha ${esc(String(c.sha256).slice(0,10))}…</span></b></div>`).join("")||'<div class="muted">none yet — generate one</div>'}
+    </div>
+    <div class="card"><h3>🔍 Auditor mode — reproduce this number, as-at</h3>
+      <label class="f">Metric</label>
+      <select class="f" id="rmetric">
+        <option value="loss_component_closing">Loss component (closing)</option>
+        <option value="csm_closing">CSM (closing)</option>
+        <option value="insurance_revenue">Insurance revenue (quarter)</option>
+        <option value="lic_closing">LIC (closing)</option>
+      </select>
+      <button class="btn" style="margin-top:10px" onclick="reproduce()">Reproduce</button>
+      <div id="rout" style="margin-top:10px"></div>
+      ${narrSlot("rnarr")}
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>The audit trail is a join, not a project</h3>
+    ${tbl((d.runs||[]).slice(0,10),["engine","run_id","status","assumption_versions","curve_dates"])}
+    <div class="muted" style="margin-top:8px">Every engine run pinned its input Delta versions, assumption versions and curve dates at write time — because everything flowed through one platform, the evidence assembles itself.</div></div>`;
+}
+async function approveWs(){const r=await post("/signoff/approve",{workstream:$("#apws").value,approver:$("#apwho").value,decision:"approved"});
+  $("#apout").textContent=r.ok?"✓ approved — recorded in gov_close_approvals":"⚠ failed";}
+async function makeCert(){$("#apout").textContent="Building certificate (evidence snapshot + PDF)…";
+  const r=await post("/signoff/certificate",{signed_by:$("#apwho").value});
+  $("#apout").innerHTML=r.certificate_id?`✓ ${r.certificate_id} — sha256 <span class="mono">${esc(String(r.sha256).slice(0,16))}…</span> · <a class="lnk" href="/api/certificate/${r.certificate_id}">download PDF</a>`:"⚠ "+JSON.stringify(r);
+  signoffPage()}
+async function reproduce(){const e=$("#rout");e.innerHTML='<div class="muted">Reading the pinned versions…</div>';
+  const r=await post("/audit/reproduce",{metric:$("#rmetric").value});
+  e.innerHTML=`${kv("Live value now",moneyFull(r.live_value))}
+    ${kv("Value at pinned Delta version "+r.pinned_version,moneyFull(r.value_at_pinned_version))}
+    ${kv("Match",r.match?'<span class="pill GREEN">IDENTICAL</span>':'<span class="pill RED">DIFFERS</span>')}
+    ${kv("Produced by",esc((r.producing_run||{}).engine||"—"))}
+    <div class="muted" style="margin-top:6px">Inputs pinned: <span class="mono">${esc(String((r.producing_run||{}).input_versions||"")).slice(0,140)}…</span></div>`;
+  const n=$("#rnarr");n.innerHTML='<span class="tag">audit_evidence agent</span><span class="muted">explaining…</span>';
+  const nr=await post("/audit/narrate",{metric:$("#rmetric").value,cache:CACHE_ON?1:0});
+  n.innerHTML=`<span class="tag">audit_evidence ${cacheBadge(nr.cache)}</span>${esc(nr.text)}`}
+
+/* ---------- governance ---------- */
+const GOVTABS=[["inventory","What's collected"],["runs","Run audit"],["assumptions","Assumption registry"],["models","Model register"],["activity","AI activity"],["lineage","Lineage (real UC)"],["masking","UC masking"]];
+let GOVTAB="inventory";
+async function governancePage(){
+  $("#m").innerHTML=`<div class="eyebrow">Platform</div><h1>Governance</h1>
+  <p class="sub">What's collected, who approved what, which engine produced which number from which inputs, what the AI actually did, and lineage captured by the platform — regulator-viewable, all of it.</p>
+  <div class="tabs">${GOVTABS.map(([k,l])=>`<button class="${GOVTAB===k?"on":""}" onclick="GOVTAB='${k}';governancePage()">${l}</button>`).join("")}</div>
+  <div id="gvbody" class="loading">Loading…</div>`;
+  const d=await api("/governance/"+GOVTAB);
+  const notes={
+    inventory:"Sensitivity tiers per feed; the masking column names the exact UC control.",
+    runs:"One row per engine run: pinned input Delta versions, assumption versions, curve dates. The audit trail is a join.",
+    assumptions:"Versioned and approved. flood_freq_property v2 (approved 2026-07-03) is this quarter's story.",
+    models:"SS1/23-shaped: tier, accountable owner, validation, monitoring, USE CONSTRAINTS — joined live to the UC registry.",
+    activity:"Every agent interaction: what was asked, which tools it really called, what it said.",
+    lineage:"system.access.table_lineage — captured by Unity Catalog as the engines ran, not drawn by hand.",
+    masking:"This is the app SP's own view of gov_journal_secure — identities masked BY UNITY CATALOG because the SP is outside ifrs17_finance_controllers."};
+  $("#gvbody").innerHTML=`<div class="card">${tbl(d.rows)}<div class="muted" style="margin-top:8px">${notes[GOVTAB]||""}</div></div>`;
+}
+
+/* ---------- IFRS 17 AI ---------- */
+const BENCH=[
+ {role:"supervisor",tone:"tone-violet",ic:"✳",nm:"IFRS 17 AI (supervisor)",d:"A real tool-calling agent over 11 governed UC functions + Genie. Ask it why a number moved — it calls the onerous test, the waterfall, the AoC, and cites what it found. The tool trace is shown as proof."},
+ {role:"movement_narrator",tone:"tone-blue",ic:"↔",nm:"Movement narrator",d:"Explains any cohort's analysis of change in IFRS 17 language — experience vs assumptions vs unwind — naming the assumption version and approver. Lives on Cohort 360."},
+ {role:"disclosure_drafter",tone:"tone-emerald",ic:"¶",nm:"Disclosure drafter",d:"Drafts note paragraphs from the computed roll-forwards in annual-report register. Every draft ends 'for reporting team review' — a human approves. Lives on Results."},
+ {role:"audit_evidence",tone:"tone-amber",ic:"🔍",nm:"Audit evidence explainer",d:"Turns a run-audit record into a plain-English reproduction recipe for an auditor. Lives on Sign-off &amp; Audit."},
+ {role:"cfo_brief",tone:"tone-blue",ic:"☕",nm:"CFO close brief",d:"Three quantified bullets + a sign-or-don't line, from the close board and the statements. Lives on the Cockpit."},
+];
+async function aiPage(){
+  $("#m").innerHTML=`<div class="eyebrow">Platform</div><h1>IFRS 17 AI</h1>
+  <p class="sub">One hard rule everywhere: <b>LLMs narrate, SQL decides.</b> Every figure an agent cites is computed by a governed UC function; the agents put words around numbers and are logged doing it.</p>
+  <div class="askbox">
+    <h2>✳ Ask the close</h2>
+    <div class="sb">A genuine tool-calling agent (Mosaic AI Agent Framework, Claude on the FM API). It decides which UC functions to call, calls them for real, and answers with the trace shown.</div>
+    <div class="exs">
+      ${["Why did the 2026 property cohort turn onerous?","Walk me through the CLT-2025 CSM waterfall this quarter","Is the close ready to sign? What's still open?","What offsets the property loss component?","Explain the recon break and how it was cleared"].map(q=>`<span class="ex" onclick="$('#aiq').value=this.textContent;aiAsk()">${q}</span>`).join("")}
+    </div>
+    <div class="row"><input id="aiq" placeholder="Ask about any group, movement, or the close itself…" onkeydown="if(event.key==='Enter')aiAsk()"><button class="go" onclick="aiAsk()">Ask</button></div>
+    <div id="aians"></div>
+  </div>
+  <div class="sech">The bench</div>
+  <div class="aitiles" id="bench"></div>
+  <div class="prov" style="margin-top:16px"><b>Where's the governance?</b> Every interaction lands in <span class="mono">gld_ai_activity</span> (Governance → AI activity). The agents appear in the SS1/23-shaped model register with explicit use constraints. Structured panels never come from an LLM — they are direct UC function calls.</div>`;
+  const b=await api("/ai/bench");
+  const counts={};(b.activity||[]).forEach(a=>counts[a.agent]=a.calls);
+  $("#bench").innerHTML=BENCH.map(t=>`<div class="atile ${t.tone}">
+    <div class="ic">${t.ic}</div><div class="role">${t.role}</div><b class="nm">${t.nm}</b>
+    <div class="d">${t.d}</div><div class="ep">${esc((b.endpoints||{})[t.role]||"")}${counts[t.role]?" · "+counts[t.role]+" logged calls":""}</div></div>`).join("");
+}
+async function aiAsk(){const q=$("#aiq").value.trim();if(!q)return;
+  $("#aians").innerHTML='<div class="ans"><span class="muted">The agent is choosing tools and calling UC functions…</span></div>';
+  const r=await post("/ai/ask",{question:q,cache:CACHE_ON?1:0});
+  $("#aians").innerHTML=`<div class="ans">${esc(r.text)}</div>
+    <div class="trace">🛠 tools actually called: ${r.tools&&r.tools.length?r.tools.map(t=>`<b>${esc(t)}</b>`).join(" → "):"(none)"} ${cacheBadge(r.cache)}</div>`}
+
+/* ---------- insight ---------- */
+async function insightPage(){
+  $("#m").innerHTML=`<div class="eyebrow">Platform</div><h1>Insight — Genie &amp; the close dashboard</h1>
+  <p class="sub">Self-service on the same governed tables: natural-language questions via AI/BI Genie, and the Lakeview board view.</p>
+  <div id="inbody" class="loading">Loading…</div>`;
+  const c=CFG;
+  $("#inbody").innerHTML=`
+  ${c.genie_embed_url?`<div class="card"><h3>Ask Genie — natural language over the close marts</h3><iframe class="embed" style="height:520px" src="${c.genie_embed_url}"></iframe></div>`:'<div class="note">Genie space not yet configured — set GENIE_SPACE_ID after creating it (P7).</div>'}
+  ${c.dashboard_embed_url?`<div class="card" style="margin-top:16px"><h3>IFRS 17 — Close View (Lakeview)</h3><iframe class="embed" style="height:640px" src="${c.dashboard_embed_url}"></iframe></div>`:'<div class="note" style="margin-top:16px">Dashboard not yet configured — set DASHBOARD_ID after publishing (P7).</div>'}`;
+}
+
+/* ---------- learn ---------- */
+let SLIDE=0;
+const SLIDES=[
+ {t:"What IFRS 17 changed",b:`Before IFRS 17, an insurer's P&L led with <b>premium written</b> — cash in, essentially. IFRS 17 replaced that with <b>insurance revenue</b>: the value of coverage actually delivered in the period, with profit recognised as service is provided.<br><br>The balance sheet now speaks two liabilities: the <b>LRC</b> (liability for remaining coverage — coverage owed for premium taken) and the <b>LIC</b> (liability for incurred claims — claims that happened but aren't fully paid).<br><br><b>Never say:</b> "premium income" on the statement face. <b>Where it lives here:</b> Results &amp; Disclosures.`},
+ {t:"Groups — the unit of account",b:`Contracts are grouped: <b>portfolio</b> (similar risks, managed together) → <b>profitability bucket</b> (onerous / no significant possibility of becoming onerous / remaining) → <b>annual cohort</b> (year written). Buckets are judged at initial recognition and are <b>fixed forever</b> — a group that deteriorates later doesn't move buckets; it grows a loss component inside.<br><br>Counter-intuitive but correct: thin-margin motor is in <i>remaining</i> (it COULD go onerous); fat-margin multi-year lines are the <i>no-significant-possibility</i> ones.<br><br><b>Where:</b> Contract Groups.`},
+ {t:"Two measurement models here",b:`<b>PAA</b> (premium allocation approach) — the simplified model, allowed for coverage ≤ 12 months: motor, property, liability. The LRC is basically unearned premium (undiscounted). <b>PAA groups have no CSM — ever.</b><br><br><b>GMM</b> (general measurement model) — the full model for multi-year contracts: 3-year engineering &amp; casualty, 10-year construction decennial. This is where the CSM lives.<br><br>The <b>run-off book</b> writes nothing — no remaining coverage, no CSM. It is pure LIC: claims developing, discount unwinding.<br><br><b>Where:</b> Cohort 360 (pick different groups).`},
+ {t:"The building blocks",b:`<b>FCF (fulfilment cash flows)</b> = present value of expected future cash out − cash in + a <b>risk adjustment</b>. <b>RA</b> = the price of uncertainty in non-financial risk; disclosed with its confidence level (here: 75th percentile).<br><br><b>CSM (contractual service margin)</b> = the UNEARNED PROFIT in a GMM group, held on the balance sheet and released as coverage is delivered. Profitable day one? No day-one gain — it goes to CSM. Loss-making day one? The loss hits P&amp;L immediately.<br><br><b>Loss component</b> = the recognised deficit on an onerous group, tracked separately so it isn't double-counted as revenue later.`},
+ {t:"Discounting — locked-in vs current",b:`All future cash flows are discounted. Two bases matter: the <b>locked-in</b> curve (from when a cohort was written — drives CSM interest accretion and GMM P&L) and the <b>current</b> curve (drives the balance sheet).<br><br>The difference lands in <b>OCI</b> (a policy choice this entity takes for GMM).<br><br>The expert detail: shift rates and <b>the CSM barely moves</b> — accretion is locked-in. Try it: Discount &amp; Assumptions → the what-if.<br><br>Here the base curves are <b>real EIOPA publications</b>, plus an illiquidity premium per portfolio (a governed, versioned assumption — IFRS 17 rates are NOT Solvency II rates).`},
+ {t:"The onerous test — this quarter's story",b:`§57: when <b>facts and circumstances</b> suggest a PAA group may be onerous, compute the full FCF for its remaining coverage and compare with the LRC carrying amount. Excess = <b>loss component</b>, straight to P&amp;L.<br><br>Here: June 2026 floods hit the property book. The claims themselves are <b>past service</b> (they hit the LIC). But the actuaries also re-based flood frequency (assumption v2, approved by the Chief Actuary) — that's <b>future service</b>, and it pushed the 2025/2026 property cohorts onerous.<br><br>That split — past vs future service — is THE auditor conversation. The workbench computes it; the agent narrates it. <b>Where:</b> Cohort 360 → PROP-2026-REM.`},
+ {t:"Coverage units & revenue",b:`How fast does CSM become profit? By <b>coverage units</b>: the quantity of coverage provided each period vs remaining (here: sum insured × coverage period, a versioned assumption).<br><br>GMM insurance revenue = expected claims and expenses for the period + the RA released + the CSM released + acquisition-cost amortisation. PAA revenue = premium earned by passage of time.<br><br>Either way: <b>revenue is delivery of coverage, never receipt of cash.</b><br><br><b>Where:</b> Cohort 360 (coverage units card) and Results (revenue decomposition).`},
+ {t:"The close — ten days, two regimes",b:`The BAU pain of IFRS 17 isn't the maths — it's the <b>operational close</b>: nine feeds from six systems, the reserving delivery on Day 3, assumptions to approve, engines to run, books to reconcile, disclosures to produce, Solvency II due the same week.<br><br>The workbench runs it as one orchestrated chain with a <b>quality gate that stops the run</b> — a drifted actuarial file blocks Day 3 visibly, gets fixed, and the whole quarter re-produces in minutes.<br><br><b>Where:</b> Close Cockpit — including the break-it/fix-it levers.`},
+ {t:"Books, recon and audit",b:`Every engine movement posts a <b>balanced Dr/Cr pair</b> to a subledger; the statements and the §101 disclosure are derived from those postings — so they foot to the balance sheet <b>by construction</b>.<br><br>The GL recon compares the accounts both sides carry; a real break (a misbooked cost-centre) is found and journal-cleared.<br><br>And every engine run pins its inputs: Delta table versions, assumption versions, curve dates. Reproducing a signed number for an auditor = <b>a join + time travel</b>, not a six-week project. <b>Where:</b> Reconciliation, Sign-off &amp; Audit.`},
+ {t:"What Databricks does here",b:`One platform runs the whole thing: <b>Auto Loader + Lakeflow Declarative Pipelines</b> (governed ingestion, expectations, quarantine) · <b>Workflows</b> (the close chain with the gate) · <b>Delta + Unity Catalog</b> (time travel, lineage, masking, one source of truth) · <b>driver-side engines</b> (deterministic measurement maths) · <b>MLflow</b> (the challenger model, registered and governed) · <b>Mosaic AI Agent Framework + FM API (Claude)</b> (agents that narrate, never decide) · <b>AI/BI Genie &amp; Lakeview</b> (self-service) · <b>Databricks Apps</b> (this thin workbench).<br><br>The workbench <b>consumes</b> actuarial projections — it doesn't replace your reserving or projection engines. It makes everything around them governed, fast and reproducible.`},
+];
+const GLOSSARY=[
+ ["Insurance revenue","the value of coverage delivered in the period. NEVER written premium."],["GWP","gross written premium — a KPI, not a statement line."],
+ ["LRC","liability for remaining coverage — coverage still owed."],["LIC","liability for incurred claims — happened, not fully paid. Discounted + RA, even under PAA."],
+ ["FCF","fulfilment cash flows: PV(out) − PV(in) + RA."],["RA","risk adjustment for non-financial risk; disclosed with a confidence level (75% here)."],
+ ["CSM","contractual service margin — unearned profit on GMM groups. No CSM on PAA. Released via coverage units."],
+ ["Loss component","recognised deficit on an onerous group; tracked inside the group."],["Loss-recovery component","the reinsurance-held offset to a gross loss component. Reinsurance held is never 'onerous'."],
+ ["PAA","premium allocation approach — simplified model for ≤12m coverage."],["GMM","general measurement model — the full building-blocks model."],
+ ["VFA","variable fee approach for direct participation business — out of scope here (Phase 2)."],
+ ["Onerous test (§57)","facts-and-circumstances comparison of FCF vs LRC carrying for PAA groups."],
+ ["Coverage units","the quantity of coverage per period; drives CSM release. A judgement — versioned here."],
+ ["Locked-in rate","discount curve from cohort inception; drives CSM accretion and GMM P&L."],["Current rate","today's curve; drives the balance sheet. Difference → OCI (policy choice)."],
+ ["IFIE","insurance finance income/expenses — unwind + rate effects."],["OCI option","§88 choice to park rate-driven remeasurement in equity."],
+ ["Annual cohort","groups may not contain contracts written more than a year apart."],
+ ["Profitability buckets","onerous / no-significant-possibility / remaining — fixed at initial recognition."],
+ ["Experience variance","actual vs expected for the period — past service, P&L now."],["Assumption change","revised future expectations — future service: CSM unlock (GMM) or onerous test (PAA)."],
+ ["Contract boundary","which future cash flows belong to existing contracts. Differs from Solvency II."],
+ ["Transition","how the CSM was built at adoption. This book: post-transition cohorts only (see Q&A)."],
+ ["Subledger","the posting-level IFRS 17 books; here the workbench IS the system of record for technical accounts."],
+];
+const QA=[
+ ["How is the risk adjustment calibrated?","Here: lognormal quantile at CL-75 per line — one clean illustrative choice. Real entities choose CoC or percentile methods, diversification treatment, gross/net presentation. → 'The platform is methodology-agnostic: your actuaries own the method; the workbench makes it versioned, governed and reproducible.'"],
+ ["Why EIOPA curves? Our IFRS 17 rates aren't Solvency II rates.","Correct — and neither are these: the workbench adds an illiquidity premium per portfolio as a governed assumption on top of the real EIOPA base. Any curve construction your actuaries own would land the same way."],
+ ["What about transition (modified retrospective / fair value)?","Out of computational scope — this book's cohorts all post-date transition ('transition completed FY2023'). Real estates carry transition-derived CSM; the registry/versioning pattern extends to transition amounts directly. Acknowledge, don't improvise."],
+ ["Coverage units for the decennial book — discounted? Sum insured or count?","Sum insured × coverage period, undiscounted — disclosed on-screen and versioned in the registry. Whether to discount units is a genuine judgement; the point is it's a GOVERNED judgement here."],
+ ["PAA eligibility for multi-year contracts?","Multi-year lines are on GMM precisely because they fail the 12-month test. The eligibility assertion itself is a registry record."],
+ ["Is the LIC really discounted under PAA?","Yes — discounted + RA, with unwind and rate effects in IFIE. The §59(b) undiscounted option only applies where claims settle within a year, which long-settlement lines don't."],
+ ["Where's reinsurance held measurement?","A 30% property QS is measured (simplified, disclosed): recoverable, recoveries, and the loss-recovery component offsetting the gross LC. Full held-GMM measurement is roadmap."],
+ ["What if the AI hallucinates a number?","It can't cite what it didn't call: every figure comes from a deterministic UC function, the tool trace is displayed, and every interaction is logged to gld_ai_activity. LLMs narrate, SQL decides."],
+ ["IFRS 9 / the asset side? Deferred tax? Multi-GAAP?","Deliberately out — roadmap items on the coverage panel. The insurance service result is complete; the investment result line is where IFRS 9 plugs in."],
+ ["Is this your actuarial engine?","No — the workbench CONSUMES reserving/projection output as a governed feed (that's the drifted-file story). It replaces the glue, not the engines: your Prophet/ResQ/Igloo results become governed inputs with lineage."],
+];
+function learnPage(){
+  const covered=["Grouping §16–24 (computed)","PAA LRC + discounted LIC + RA","§57 onerous test, every quarter","GMM CSM, strict B96 order","Real EIOPA curves + ILP overlay","OCI disaggregation (GMM)","Reinsurance held (simplified QS) + loss-recovery","Balanced subledger + GL recon","§80 / §101 / §104 / RA disclosures","AvE: experience vs assumptions vs finance","Sign-off certificate + as-at reproduction"];
+  const simplified=["Quarterly (not monthly) roll-forwards","Single currency (EUR)","Flat ILP per portfolio","Locked-in = cohort-year-end curve","Coverage units undiscounted","RA lognormal CL-75","PAA revenue = earned premium (LC allocation simplified)","Historic 'current' curves = nearest real publication","Held reinsurance simplified (QS share)"];
+  const roadmap=["VFA (participating business)","Transition balances (MRA/FVA)","IFRS 9 asset side & investment result","Deferred tax on CSM / Pillar Two","Multi-GAAP / local statutory","Monthly cohorts & multi-entity consolidation","Full reinsurance-held GMM"];
+  $("#m").innerHTML=`<div class="eyebrow">Learn</div><h1>IFRS 17 in ten slides</h1>
+  <p class="sub">For the presenter who isn't an IFRS 17 practitioner: the concepts, the vocabulary that must never be misspoken, and honest answers to the hard questions. Present from here if you like — each slide names the screen where it lives.</p>
+  <div class="tabs">${SLIDES.map((s,i)=>`<button class="${SLIDE===i?"on":""}" onclick="SLIDE=${i};learnPage()">${i+1}</button>`).join("")}<button onclick="SLIDE=(SLIDE+1)%${SLIDES.length};learnPage()">next →</button></div>
+  <div class="card" style="min-height:200px"><div class="eyebrow">Slide ${SLIDE+1} of ${SLIDES.length}</div><h1 style="font-size:20px">${SLIDES[SLIDE].t}</h1><p style="line-height:1.7;font-size:13.5px">${SLIDES[SLIDE].b}</p></div>
+  <div class="sech">Coverage &amp; roadmap — what's computed, what's simplified (and disclosed), what's next</div>
+  <div class="cov3">
+    <div class="card" style="border-top:3px solid #16a34a"><h3>✅ Computed for real</h3><ul>${covered.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+    <div class="card" style="border-top:3px solid #d97706"><h3>⚠ Simplified — disclosed</h3><ul>${simplified.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+    <div class="card" style="border-top:3px solid #64748b"><h3>▸ Roadmap</h3><ul>${roadmap.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+  </div>
+  <div class="sech">The 25 terms that must never be misspoken</div>
+  <div class="card"><div class="glo">${GLOSSARY.map(([t,d])=>`<div><b>${t}</b> — ${d}</div>`).join("")}</div></div>
+  <div class="sech">Q&amp;A armour — the questions experts will ask</div>
+  ${QA.map(([q,a])=>`<div class="qa"><b>“${q}”</b><div class="qa-a">${a}</div></div>`).join("")}
+  <div class="prov"><b>The universal deflection</b> (use verbatim when a methodology question goes deeper than the demo): “The platform is methodology-agnostic — your actuaries own the assumptions and methods; the workbench makes them versioned, governed and reproducible. What you're seeing is one illustrative configuration.” Never defend an actuarial choice.</div>`;
+}
+
+/* ---------- boot ---------- */
+(async function(){
+  renderCacheBtn();
+  try{CFG=await api("/config")}catch(e){CFG={}}
+  route();
+})();
+</script>
 </body>
 </html>

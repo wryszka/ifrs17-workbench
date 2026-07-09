@@ -30,8 +30,12 @@ quar = pdf(f"""SELECT _source_file, quarantine_reason, COUNT(*) rows
                FROM {FQ}.brz_quarantine_cashflows
                WHERE _source_file LIKE '%{CLOSE_PERIOD}%'
                GROUP BY 1, 2""")
-if not quar.empty:
-    for _, r in quar.iterrows():
+# Quarantine rows are DLT-owned history; they BLOCK only while the offending file is still in
+# landing (the restore lever removes it — that removal IS the fix, like a real re-delivery).
+import os
+landing_files = set(os.listdir(f"{VOL}/landing/actuarial_projections"))
+for _, r in quar.iterrows():
+    if r["_source_file"] in landing_files:
         problems.append(f"QUARANTINED: {r['_source_file']} ({r['quarantine_reason']}, {r['rows']} rows)")
 
 # COMMAND ----------

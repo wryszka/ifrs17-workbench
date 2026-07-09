@@ -1,0 +1,60 @@
+resources:
+  jobs:
+    ifrs17_06_agents:
+      name: ifrs17_06_agents
+      description: "Agent stack: UC function tools → narrate-only role agents → tool-calling supervisor (agents.deploy). Rerunning 06 tools requires re-granting EXECUTE + redeploying the supervisor."
+      tags:
+        project: ifrs17_workbench
+      environments:
+        - environment_key: default
+          spec:
+            client: "5"
+            dependencies:
+              - databricks-agents
+              - mlflow
+              - databricks-sdk
+              - requests
+      tasks:
+        - task_key: agent_tools
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/06_agent_tools.py
+            base_parameters: &params
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+        - task_key: role_agents
+          depends_on:
+            - task_key: agent_tools
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/06a_agents.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              fm_endpoint: ${var.fm_endpoint}
+        - task_key: supervisor
+          depends_on:
+            - task_key: agent_tools
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/06b_supervisor_agent.py
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              fm_endpoint: ${var.fm_endpoint}
+              warehouse_id: ${var.warehouse_id}
+              genie_space_id: ${var.genie_space_id}
+        - task_key: governance
+          depends_on:
+            - task_key: supervisor
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/07_governance.py
+            base_parameters: *params
+        - task_key: board_pack
+          depends_on:
+            - task_key: governance
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/12_packs.py
+            base_parameters: *params

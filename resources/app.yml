@@ -1,0 +1,11 @@
+resources:
+  apps:
+    ifrs17_workbench_app:
+      name: ifrs17-workbench
+      description: "Bricksurance SE IFRS 17 Workbench — the quarterly close, feeds to sign-off, over governed engines, UC functions, agents and Genie"
+      source_code_path: ../app
+      resources:
+        - name: sql_warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
