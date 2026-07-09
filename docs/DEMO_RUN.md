@@ -1,5 +1,15 @@
 # DEMO_RUN — IFRS 17 Workbench (~20 minutes)
 
+**Quick links (dev workspace `fevm-lr-dev-aws-us`):**
+App: https://ifrs17-workbench-7474656169654171.aws.databricksapps.com ·
+Hub tile: https://actuarial-workbench-7474656169654171.aws.databricksapps.com ·
+Genie space `01f17b806f8c1065951e64f25bc74376` · dashboard `01f17b7f0e4618818bcd3e6e24f656fb`
+
+**The pinned hero numbers** (byte-identical after every reset — quote them with confidence):
+PROP-2026-REM loss component **€1,427,522.92** · PROP-2025-REM **€529,715.94** ·
+CLT-2025-NSP CSM unlock **€1,642,225.40** leaving **€692,373.17** closing CSM ·
+GL break **€412,340.00** cleared by journal MJ-2026Q2-001 · flood event gross **€16.8m**.
+
 **Audience:** CFO / CRO / Head of IFRS 17 reporting / actuaries / finance change.
 **Presenter:** you do NOT need to be an IFRS 17 practitioner. The in-app **Learn** page is your
 prep (ten slides + glossary + Q&A armour). Present the *process*; let the workbench present the
