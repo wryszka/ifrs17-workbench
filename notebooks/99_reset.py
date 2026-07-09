@@ -45,4 +45,22 @@ for t in ("gov_close_approvals",):
     except Exception as e:  # noqa: BLE001
         print(f"skip {t}: {e}")
 
+# 5 · wait for any in-flight medallion update (e.g. a just-blocked close run) to settle —
+# two concurrent updates on one pipeline fail with "Pipeline update already in progress"
+try:
+    import time
+    from databricks.sdk import WorkspaceClient
+    w = WorkspaceClient()
+    pipe = next((p for p in w.pipelines.list_pipelines() if "ifrs17_medallion" in (p.name or "")), None)
+    if pipe:
+        for _ in range(40):
+            ups = w.pipelines.list_updates(pipeline_id=pipe.pipeline_id, max_results=1).updates or []
+            state = str(ups[0].state) if ups else "IDLE"
+            if not any(s in state for s in ("RUNNING", "INITIALIZING", "WAITING", "SETTING_UP", "RESETTING", "CREATED", "QUEUED")):
+                break
+            print(f"medallion update {state} — waiting 30s…")
+            time.sleep(30)
+except Exception as e:  # noqa: BLE001
+    print(f"pipeline idle-check skipped: {e}")
+
 print("reset prep done — the job now rebuilds truth → landing → medallion (full refresh) → close")
