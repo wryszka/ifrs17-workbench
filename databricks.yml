@@ -1,0 +1,67 @@
+bundle:
+  name: ifrs17-workbench
+
+variables:
+  catalog:
+    description: Unity Catalog name for all demo tables (portability anchor — change this one var to redeploy elsewhere)
+    default: lr_dev_aws_us_catalog
+  schema:
+    description: Schema name for all demo tables (fixed across workspaces)
+    default: ifrs17_workbench
+  warehouse_id:
+    description: SQL warehouse used by the app + scripts for data queries
+    default: "a3b61648ea4809e3"
+  entity_name:
+    description: The insurer
+    default: "Bricksurance SE"
+  fm_endpoint:
+    description: Foundation Model API endpoint backing narration agents + supervisor (must support batch ai_query)
+    default: "databricks-claude-sonnet-4-5"
+  app_service_principal_id:
+    description: Databricks App service principal (grants applied imperatively) — set after first app create
+    default: ""
+  genie_space_id:
+    description: AI/BI Genie space "IFRS 17 — Ask the Close" — set after creation (blank hides the tile)
+    default: ""
+  dashboard_id:
+    description: Lakeview dashboard "IFRS 17 — Close View" — set after publish (blank hides the embed)
+    default: ""
+  use_cache:
+    description: Switchable latency aid wrapping LLM narration only (never structured outputs)
+    default: "true"
+
+# Single dev workspace for this demo. Catalog is the portability anchor:
+# redeploy elsewhere by overriding --var catalog=<other_catalog>.
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://fevm-lr-dev-aws-us.cloud.databricks.com
+      profile: DEV
+    variables:
+      catalog: lr_dev_aws_us_catalog
+      warehouse_id: "a3b61648ea4809e3"
+      # genie_space_id / dashboard_id captured after creation (P7).
+
+  # CENTRAL / SHAREABLE deployment — assets in /Workspace/Shared, production mode strips the
+  # dev_<user>_ prefix so any SA can demo/redeploy. Mirrors underwriting-workbench.
+  shared:
+    mode: production
+    workspace:
+      host: https://fevm-lr-dev-aws-us.cloud.databricks.com
+      profile: DEV
+      root_path: /Workspace/Shared/ifrs17_workbench
+    run_as:
+      user_name: laurence.ryszka@databricks.com
+    variables:
+      catalog: lr_dev_aws_us_catalog
+      warehouse_id: "a3b61648ea4809e3"
+
+sync:
+  exclude:
+    - app/.venv/
+    - "*.bak"
+
+include:
+  - resources/*.yml
