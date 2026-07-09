@@ -12,7 +12,7 @@ env:
   - name: FM_ENDPOINT
     value: "databricks-claude-sonnet-4-5"
   - name: GENIE_SPACE_ID
-    value: ""
+    value: "01f17b806f8c1065951e64f25bc74376"
   - name: DASHBOARD_ID
     value: "01f17b7f0e4618818bcd3e6e24f656fb"
   - name: HUB_APP_URL

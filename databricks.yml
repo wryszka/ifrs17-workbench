@@ -43,7 +43,7 @@ targets:
       catalog: lr_dev_aws_us_catalog
       warehouse_id: "a3b61648ea4809e3"
       dashboard_id: "01f17b7f0e4618818bcd3e6e24f656fb"
-      # genie_space_id captured after creation (P7).
+      genie_space_id: "01f17b806f8c1065951e64f25bc74376"
 
   # CENTRAL / SHAREABLE deployment — assets in /Workspace/Shared, production mode strips the
   # dev_<user>_ prefix so any SA can demo/redeploy. Mirrors underwriting-workbench.
