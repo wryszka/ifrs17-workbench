@@ -103,7 +103,24 @@ print("agent model v", ver)
 
 # COMMAND ----------
 
+import time
+
 w = WorkspaceClient()
+
+
+def _wait_not_updating(endpoint, timeout_s=1500):
+    """Endpoint create/update is async — a job-task retry can race a half-provisioned endpoint."""
+    t0 = time.time()
+    while time.time() - t0 < timeout_s:
+        try:
+            ep = w.serving_endpoints.get(endpoint)
+            cu = getattr(ep.state, "config_update", None)
+            if cu is None or str(cu).endswith("NOT_UPDATING"):
+                return True
+        except Exception:  # noqa: BLE001 — endpoint may not exist yet
+            return True
+        time.sleep(30)
+    return False
 
 
 def deploy_agent(endpoint, role):
@@ -111,11 +128,24 @@ def deploy_agent(endpoint, role):
                                entity_version=ver, workload_size="Small", scale_to_zero_enabled=True,
                                environment_vars={"AGENT_ROLE": role, "FM_ENDPOINT": FM})
     existing = [e.name for e in w.serving_endpoints.list()]
-    if endpoint in existing:
-        w.serving_endpoints.update_config(name=endpoint, served_entities=[entity])
-    else:
-        w.serving_endpoints.create(name=endpoint, config=EndpointCoreConfigInput(name=endpoint, served_entities=[entity]))
-    print("deploying", endpoint, "(role:", role + ")")
+    for attempt in range(5):
+        try:
+            if endpoint in existing:
+                _wait_not_updating(endpoint)
+                w.serving_endpoints.update_config(name=endpoint, served_entities=[entity])
+            else:
+                w.serving_endpoints.create(name=endpoint, config=EndpointCoreConfigInput(name=endpoint, served_entities=[entity]))
+            print("deploying", endpoint, "(role:", role + ")")
+            return
+        except Exception as e:  # noqa: BLE001
+            msg = str(e)
+            if "currently being updated" in msg or "currently updating" in msg or "RESOURCE_CONFLICT" in msg:
+                print(f"  {endpoint}: update in progress (attempt {attempt + 1}) — waiting…")
+                time.sleep(90)
+                existing = [x.name for x in w.serving_endpoints.list()]
+                continue
+            raise
+    print(f"  {endpoint}: still updating after retries — the in-flight config will serve; rerun to pin v{ver}")
 
 
 deploy_agent("ifrs17-movement", "movement_narrator")

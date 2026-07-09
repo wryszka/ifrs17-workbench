@@ -229,11 +229,24 @@ from mlflow.tracking import MlflowClient
 mc = MlflowClient(registry_uri="databricks-uc")
 version = max(int(v.version) for v in mc.search_model_versions(f"name='{agent_uc_name}'"))
 
+import time
+
 from databricks import agents
 
-dep = agents.deploy(model_name=agent_uc_name, model_version=version, scale_to_zero=True,
-                    environment_vars={"AGENT_WAREHOUSE_ID": warehouse_id},
-                    tags={"project": "ifrs17_workbench", "layer": "agent"})
+dep = None
+for attempt in range(8):
+    try:
+        dep = agents.deploy(model_name=agent_uc_name, model_version=version, scale_to_zero=True,
+                            environment_vars={"AGENT_WAREHOUSE_ID": warehouse_id},
+                            tags={"project": "ifrs17_workbench", "layer": "agent"})
+        break
+    except Exception as e:  # noqa: BLE001 — endpoint provisioning is async; retries race it
+        if "currently updating" in str(e) or "currently being updated" in str(e):
+            print(f"endpoint updating (attempt {attempt + 1}) — waiting 120s…")
+            time.sleep(120)
+            continue
+        raise
+assert dep is not None, "agents.deploy did not succeed after retries"
 ep_name = getattr(dep, "endpoint_name", None) or getattr(dep, "endpoint", None)
 print("agents.deploy →", ep_name)
 dbutils.notebook.exit(json.dumps({"endpoint_name": str(ep_name), "version": version}))
