@@ -1,0 +1,37 @@
+resources:
+  jobs:
+    ifrs17_00_setup:
+      name: ifrs17_00_setup
+      description: "Synthetic truth model + landing files (all close feeds) + real EIOPA curves → Volume. Deterministic seed 42."
+      tags:
+        project: ifrs17_workbench
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: seed
+          default: "42"
+      environments:
+        - environment_key: default
+          spec:
+            client: "5"
+      tasks:
+        - task_key: truth_model
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/00_setup_and_data_generation.py
+            base_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+              seed: "{{job.parameters.seed}}"
+        - task_key: landing_files
+          depends_on:
+            - task_key: truth_model
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/00b_landing_files.py
+            base_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+              seed: "{{job.parameters.seed}}"

@@ -1,0 +1,22 @@
+resources:
+  pipelines:
+    ifrs17_medallion:
+      name: ifrs17_medallion
+      serverless: true
+      photon: true
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      event_log:
+        catalog: ${var.catalog}
+        schema: ${var.schema}
+        name: medallion_event_log
+      configuration:
+        source_catalog: ${var.catalog}
+        source_schema: ${var.schema}
+      libraries:
+        - notebook:
+            path: ../notebooks/01_bronze_dlt.py
+        - notebook:
+            path: ../notebooks/02_silver_dlt.py
+        - notebook:
+            path: ../notebooks/03_gold_dlt.py

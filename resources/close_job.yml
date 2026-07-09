@@ -1,0 +1,82 @@
+resources:
+  jobs:
+    ifrs17_quarter_close:
+      name: ifrs17_quarter_close
+      description: "The quarterly IFRS 17 close: DLT refresh → DQ scorecard → close gate (RED stops the run) → grouping → discounting+RA → PAA/LIC ∥ GMM/CSM → postings+recon → statements & disclosures. Rerunnable end-to-end in minutes."
+      tags:
+        project: ifrs17_workbench
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+      environments:
+        - environment_key: default
+          spec:
+            client: "5"
+            dependencies:
+              - openpyxl
+      tasks:
+        - task_key: medallion_refresh
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.ifrs17_medallion.id}
+            full_refresh: false
+        - task_key: dq_scorecard
+          depends_on:
+            - task_key: medallion_refresh
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/03b_dq_scorecard.py
+            base_parameters: &params
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+        - task_key: close_gate
+          depends_on:
+            - task_key: dq_scorecard
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/03c_close_gate.py
+            base_parameters: *params
+        - task_key: grouping
+          depends_on:
+            - task_key: close_gate
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/04_grouping_engine.py
+            base_parameters: *params
+        - task_key: discount_ra
+          depends_on:
+            - task_key: grouping
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/04b_discount_engine.py
+            base_parameters: *params
+        - task_key: paa_lic
+          depends_on:
+            - task_key: discount_ra
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/04c_paa_lic_engine.py
+            base_parameters: *params
+        - task_key: gmm_csm
+          depends_on:
+            - task_key: discount_ra
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/04d_gmm_csm_engine.py
+            base_parameters: *params
+        - task_key: postings_recon
+          depends_on:
+            - task_key: paa_lic
+            - task_key: gmm_csm
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/04e_postings_recon.py
+            base_parameters: *params
+        - task_key: disclosures
+          depends_on:
+            - task_key: postings_recon
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/04f_disclosures.py
+            base_parameters: *params
