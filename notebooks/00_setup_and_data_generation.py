@@ -114,7 +114,7 @@ COHORTS = {
     # GMM lines: multi-year, premium in annual installments (contract boundary includes them).
     ("CLT", 2024): dict(gwp=27_000_000, n=310, acq=0.12, exp=0.15, lr1=0.58, lr2=None, wp=[.30, .24, .22, .24]),
     ("CLT", 2025): dict(gwp=30_000_000, n=340, acq=0.12, exp=0.15, lr1=0.59, lr2=0.67, wp=[.30, .24, .22, .24]),
-    ("CLT", 2026): dict(gwp=16_000_000, n=175, acq=0.12, exp=0.15, lr1=0.59, lr2=None, wp=[.55, .45, 0, 0]),
+    ("CLT", 2026): dict(gwp=16_000_000, n=175, acq=0.12, exp=0.15, lr1=0.59, lr2=0.64, wp=[.55, .45, 0, 0]),
     ("DEC", 2024): dict(gwp=18_000_000, n=210, acq=0.13, exp=0.16, lr1=0.52, lr2=None, wp=[.25, .25, .25, .25]),
     ("DEC", 2025): dict(gwp=19_500_000, n=225, acq=0.13, exp=0.16, lr1=0.52, lr2=None, wp=[.25, .25, .25, .25]),
     ("DEC", 2026): dict(gwp=10_200_000, n=115, acq=0.13, exp=0.16, lr1=0.53, lr2=None, wp=[.52, .48, 0, 0]),
@@ -309,7 +309,7 @@ ASM = [
      "2026Q2", "June 2026 event review + portfolio re-underwriting study", "K. Verhoeven (Chief Actuary)", "2026-07-03", "active"),
     ("casualty_inflation_clt", 1, "CLT", '{"future_claims_uplift": 0.00}',
      "2024Q1", "Pricing basis", "K. Verhoeven (Chief Actuary)", "2023-12-15", "superseded"),
-    ("casualty_inflation_clt", 2, "CLT", '{"future_claims_uplift": 0.08, "cohorts": [2025]}',
+    ("casualty_inflation_clt", 2, "CLT", '{"future_claims_uplift": {"2025": 0.08, "2026": 0.05}, "note": "2026 cohort partially re-priced at renewal"}',
      "2026Q2", "Social/casualty inflation study Q2 2026", "K. Verhoeven (Chief Actuary)", "2026-07-02", "active"),
     ("illiquidity_premium", 1, "ALL", '{"MOT": 50, "PROP": 50, "LIAB": 60, "CLT": 75, "DEC": 85, "RO": 60}',
      "2024Q1", "Group methodology paper IFRS17-DR-004", "Group CFO methodology committee", "2023-11-30", "active"),

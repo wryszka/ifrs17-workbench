@@ -176,7 +176,14 @@ step("HERO: CLT-2025 casualty-inflation unlock visible, CSM survives",
 
 r = one(f"""SELECT MAX(ABS(amount)) worst FROM {FQ}.gld_csm_rollforward
             WHERE step='fcf_changes_future_service' AND group_id LIKE 'DEC%'""")
-step("no phantom unlocks on DEC (no assumption changed there)", float(r["worst"]) < 250_000, f"worst {r['worst']}")
+step("no phantom unlocks on DEC (no assumption changed there)", float(r["worst"]) < 100_000, f"worst {r['worst']}")
+
+r = one(f"""SELECT SUM(CASE WHEN step='fcf_changes_future_service' THEN amount END) unlock,
+                   SUM(CASE WHEN step='closing' THEN amount END) closing
+            FROM {FQ}.gld_csm_rollforward WHERE group_id='CLT-2026-NSP' AND close_period='{CLOSE_PERIOD}'""")
+step("HERO: CLT-2026 smaller unlock (partially re-priced cohort), CSM survives",
+     -900_000 < float(r["unlock"]) < -150_000 and float(r["closing"]) > 800_000,
+     f"unlock {r['unlock']}, closing {r['closing']}")
 
 r = one(f"""SELECT amount FROM {FQ}.gld_ri_held
             WHERE close_period='{CLOSE_PERIOD}' AND component='loss_recovery_component'""")
