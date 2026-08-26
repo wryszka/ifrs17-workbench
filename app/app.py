@@ -443,3 +443,9 @@ DIST = os.path.join(os.path.dirname(__file__), "dist")
 @app.get("/")
 def index():
     return FileResponse(os.path.join(DIST, "index.html"))
+
+
+# --- MCP server: the full workbench surface as governed tools (control-tower client) ---
+import sys as _sys
+from server import mcp as _mcp
+app.include_router(_mcp.register(_sys.modules[__name__]))

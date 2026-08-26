@@ -228,7 +228,7 @@ const NAV=[
  {sec:"", items:[["home","Overview","◇"]]},
  {sec:"Head of reporting", items:[["cockpit","Close Cockpit","▦"],["results","Results & Disclosures","▤"],["recon","Reconciliation","⇄"],["signoff","Sign-off & Audit","✓"]]},
  {sec:"Results desk", items:[["groups","Contract Groups","▥"],["cohort","Cohort 360","◎"],["discount","Discount & Assumptions","∿"]]},
- {sec:"Platform", items:[["ingestion","Ingestion","⇣"],["governance","Governance","🛡"],["ai","IFRS 17 AI","✳"],["insight","Insight","◉"]]},
+ {sec:"Platform", items:[["ingestion","Ingestion","⇣"],["governance","Governance","🛡"],["ai","IFRS 17 AI","✳"],["agent","Agent Interface","⚡"],["insight","Insight","◉"]]},
 ];
 let CUR="home", CUR_GID="PROP-2026-REM";
 function renderNav(){
@@ -242,7 +242,7 @@ function route(){closeModal();
   CUR=r; renderNav();
   const map={home:landing,cockpit:cockpitPage,groups:groupsPage,cohort:()=>cohortPage(arg||CUR_GID),
              discount:discountPage,results:resultsPage,recon:reconPage,signoff:signoffPage,
-             ingestion:ingestionPage,governance:governancePage,ai:aiPage,insight:insightPage,learn:learnPage};
+             ingestion:ingestionPage,governance:governancePage,ai:aiPage,agent:agentPage,insight:insightPage,learn:learnPage};
   (map[r]||landing)();
   if(r==="cohort"&&arg)CUR_GID=arg;
 }
@@ -716,6 +716,37 @@ async function reproduce(){const e=$("#rout");e.innerHTML='<div class="muted">Re
 /* ---------- governance ---------- */
 const GOVTABS=[["inventory","What's collected"],["runs","Run audit"],["assumptions","Assumption registry"],["models","Model register"],["activity","AI activity"],["lineage","Lineage (real UC)"],["masking","UC masking"]];
 let GOVTAB="inventory";
+async function agentPage(){
+  $("#m").innerHTML=`<div class="eyebrow">Platform</div><h1>Agent Interface</h1>
+    <p class="sub">The IFRS 17 workbench as a governed MCP tool surface.</p>
+    <div id="agbody" class="loading">Reading the MCP server manifest…</div>`;
+  let m; try{ m=await api("/mcp/manifest"); }
+  catch(e){ $("#agbody").innerHTML=`<div class="muted">MCP manifest unavailable: ${esc(String(e))}</div>`; return; }
+  const tools=m.tools||[], rpc=location.origin+"/api/mcp";
+  const gated=(t)=>/^\[gated\]/i.test(t.description), action=(t)=>/^\[(action|gated)\]/i.test(t.description);
+  const clean=(d)=>d.replace(/^\[(gated|action)\]\s*/i,"");
+  const badge=(t)=>{const c=gated(t)?["#fecaca","#fef2f2","#b91c1c","gated"]:action(t)?["#fed7aa","#fffbeb","#b45309","action"]:["#bbf7d0","#f0fdf4","#15803d","read"];
+    return `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid ${c[0]};background:${c[1]};color:${c[2]};white-space:nowrap">${c[3]}</span>`;};
+  const rowh=(t)=>`<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-bottom:1px solid #e5e7eb"><code style="font-family:monospace;font-size:11.5px;background:#f3f4f6;border:1px solid #e5e7eb;padding:1px 6px;border-radius:4px;white-space:nowrap">${esc(t.name)}</code>${badge(t)}<span style="font-size:13px;color:#111827;line-height:1.5">${esc(clean(t.description))}</span></div>`;
+  const reads=tools.filter(t=>!action(t)), acts=tools.filter(action);
+  const list=(ts)=>`<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;background:#fff">${ts.map(rowh).join("")}</div>`;
+  const sec=(lbl,ts)=>ts.length?`<h2 style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:18px 0 8px">${lbl} · ${ts.length}</h2>${list(ts)}`:"";
+  $("#agbody").innerHTML=`
+    ${present("This workbench publishes its <b>whole surface</b> as a <b>Model Context Protocol</b> server, so an outside agent — including the Bricksurance <b>control tower</b> — can operate the close end to end using the <i>same</i> governed handlers the app uses (MCP-first: one surface, no logic built twice). Write actions carry the same gate as the UI — journal posting is audited, sign-off approval is maker/checker, as-at reproduction uses Delta time travel — so an agent can’t bypass them. Read live from the running server’s manifest.")}
+    <div class="cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0">
+      <div class="card">${kv("Server",esc((m.server||{}).name||"—"))}</div>
+      <div class="card">${kv("Tools",tools.length)}</div>
+      <div class="card">${kv("MCP protocol",esc(m.protocol_version||"—"))}</div>
+      <div class="card">${kv("Transport","JSON-RPC 2.0")}</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin-bottom:6px">
+      <div style="font-size:12.5px;margin:2px 0"><b>POST</b> <code style="font-family:monospace">${rpc}</code> · initialize · tools/list · tools/call</div>
+      <div style="font-size:12.5px;margin:2px 0"><b>GET</b> &nbsp;<code style="font-family:monospace">${rpc}/manifest</code> · this manifest</div>
+    </div>
+    ${sec("Reads & narration",reads)}
+    ${sec("Governed actions",acts)}`;
+}
+
 async function governancePage(){
   $("#m").innerHTML=`<div class="eyebrow">Platform</div><h1>Governance</h1>
   <p class="sub">What's collected, who approved what, which engine produced which number from which inputs, what the AI actually did, and lineage captured by the platform — regulator-viewable, all of it.</p>
