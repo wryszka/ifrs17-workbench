@@ -176,6 +176,10 @@
   .qa .qa-a{font-size:12.5px;color:var(--mut);line-height:1.5}
   .cov3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
   .cov3 .card ul{margin:6px 0 0;padding-left:16px;font-size:12px;color:var(--mut);line-height:1.6}
+  .helpfab{position:fixed;right:18px;bottom:18px;z-index:20;background:#fff;border:1px solid var(--line);
+    border-radius:22px;padding:9px 15px;font-size:12px;font-weight:600;color:var(--blue);cursor:pointer;
+    box-shadow:0 10px 24px -8px rgba(15,23,42,.25);display:inline-flex;gap:6px;align-items:center}
+  .helpfab:hover{border-color:var(--blue)}
   /* Responsive (design standard §3): multi-col grids narrow at 900px; the fixed sidebar becomes a
      wrapping top bar at 820px so there is no horizontal page scroll on a tablet/phone. */
   @media (max-width:900px){
@@ -211,6 +215,7 @@
   <main class="main" id="m"><div class="loading">Loading…</div></main>
 </div>
 <div id="modalhost"></div>
+<a class="helpfab" id="helpfab" onclick="go('learn')" title="How does this work? Open the Learn deck">❓ How does this work?</a>
 <script>
 "use strict";
 /* ---------- state + helpers ---------- */
@@ -255,6 +260,7 @@ function go(k,arg){location.hash=arg?`#${k}/${arg}`:`#${k}`}
 function route(){closeModal();
   const h=(location.hash||"#home").slice(1); const [r,...rest]=h.split("/"); const arg=rest.join("/");
   CUR=r; renderNav();
+  const hf=$("#helpfab"); if(hf)hf.style.display=(r==="learn"||r==="home")?"none":"inline-flex";
   const map={home:landing,cockpit:cockpitPage,groups:groupsPage,cohort:()=>cohortPage(arg||CUR_GID),
              discount:discountPage,results:resultsPage,recon:reconPage,signoff:signoffPage,
              ingestion:ingestionPage,governance:governancePage,ai:aiPage,agent:agentPage,insight:insightPage,learn:learnPage};

@@ -132,3 +132,7 @@ activity log) · IFRS 9 / tax / multi-GAAP (roadmap panel) · "is this an actuar
 Sidebar **↺ Reset demo** (or job `ifrs17_99_reset`): removes any injected drift, clears the
 narration cache, regenerates the world (seed 42), full-refreshes the medallion and re-runs the
 close. Heroes come back byte-identical. Safe any time; takes ~15 minutes.
+
+**After a reset, warm the AI cache** so the first narration in the room is instant: `POST /api/prewarm`
+with `{}` to list the hero beats, then `{"beat":"<name>"}` for each (chunked to stay under the Apps
+gateway timeout) — or simply click through the hero beats once with the cache toggle on.

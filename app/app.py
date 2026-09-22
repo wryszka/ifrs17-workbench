@@ -315,6 +315,24 @@ def recon():
 def post_journal(body: dict):
     """Lands a journal file in the same governed feed folder — it flows through the pipeline
     like any other journal (bronze expectations, silver, recon) on the next close run."""
+    # Validate before landing so a malformed journal is rejected with a clear reason (rather than
+    # silently quarantining downstream in DLT with no user feedback).
+    dr = str(body.get("gl_account_dr", "")).strip()
+    cr = str(body.get("gl_account_cr", "")).strip()
+    try:
+        amt = float(body.get("amount_eur", 0))
+    except (TypeError, ValueError):
+        return {"ok": False, "reason": "amount_eur must be a number"}
+    if not dr or not cr:
+        return {"ok": False, "reason": "gl_account_dr and gl_account_cr are both required"}
+    if dr == cr:
+        return {"ok": False, "reason": "debit and credit accounts must differ"}
+    if amt == 0:
+        return {"ok": False, "reason": "amount_eur must be non-zero"}
+    known = sql.query_one(f"SELECT count(*) n FROM {F('ref_coa_mapping')} "
+                          f"WHERE gl_account IN ('{sql.esc(dr)}', '{sql.esc(cr)}')")
+    if int((known or {}).get("n", 0) or 0) < 2:
+        return {"ok": False, "reason": f"unknown GL account(s): dr={dr}, cr={cr} must exist in the chart of accounts"}
     jid = f"MJ-{PERIOD}-APP-{uuid.uuid4().hex[:6].upper()}"
     row = (f"{jid},{sql.esc(body.get('period', PERIOD))},{sql.esc(body.get('gl_account_dr', ''))},"
            f"{sql.esc(body.get('gl_account_cr', ''))},{float(body.get('amount_eur', 0))},"
@@ -510,6 +528,33 @@ def audit_narrate(body: dict = None):
     ev = reproduce(body)
     return agents.narrate("audit_evidence", "Explain to an auditor how this number is reproduced.",
                           ev, use_cache=body.get("cache"))
+
+
+@app.post("/api/prewarm")
+def prewarm(body: dict = None):
+    """Populate the narration cache for the hero beats so the FIRST live narration in the room is
+    instant. Reset clears the cache; warm afterwards. CHUNKED — one beat per call — because warming
+    all beats in a single request exceeds the Databricks Apps gateway timeout. POST {} to list the
+    beats, then POST {"beat": <name>} for each (a tiny client loop, or the presenter clicks the heroes)."""
+    body = body or {}
+    beats = {
+        "cfo_brief": lambda: cfo_brief({"cache": True}),
+        "cohort_prop_2026": lambda: cohort_narrate("PROP-2026-REM", {"cache": True}),
+        "cohort_clt_2025": lambda: cohort_narrate("CLT-2025-NSP", {"cache": True}),
+        "audit_loss_component": lambda: audit_narrate({"metric": "loss_component_closing", "cache": True}),
+        "disclosure_loss_component": lambda: disclosure_note({"topic": "loss_component", "cache": True}),
+    }
+    beat = body.get("beat")
+    if not beat:
+        return {"beats": list(beats), "note": "POST {\"beat\": <name>} per beat (chunked under the gateway timeout)"}
+    fn = beats.get(beat)
+    if not fn:
+        return {"ok": False, "reason": f"unknown beat '{beat}'", "beats": list(beats)}
+    try:
+        fn()
+        return {"ok": True, "warmed": beat}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "beat": beat, "error": str(e)[:120]}
 
 
 # ---------------------------------------------------------------- governance

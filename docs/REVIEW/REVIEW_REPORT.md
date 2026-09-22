@@ -66,7 +66,7 @@ This pass builds on an earlier external implementation review (21 Sep 2026) whos
 |---|---|---|---|
 | 3.1 | Cold warehouse → every panel renders blank with no error (sql.py 50s wait → `[]`; `query_many` swallows exceptions). Classic demo-day failure. | blocker (live) | fixed |
 | 3.2 | ~8-min close won't complete inside the 3-min cockpit beat → "it's running in the background", loses impact. | major | roadmapped (runsheet) |
-| 3.3 | Narration cache is insert-only and its key omits the close/data version → stale narration after a rerun; reset clears but does not pre-warm (yellow-button pre-warm requirement unmet). | major | fixed |
+| 3.3 | Narration cache is insert-only and its key omits the close/data version → stale narration after a rerun; reset clears but does not pre-warm (yellow-button pre-warm requirement unmet). | major | fixed (upsert + data-versioned key; **`/api/prewarm` chunked per beat** under the Apps gateway timeout — verified live) |
 | 3.4 | No warehouse warm-up / no `/api/preflight` health check. | major | fixed |
 | 3.5 | Close date fixed at 2026-06-30, does not roll forward on reset (diverges from "reset rolls dates to today"). | minor | roadmapped (documented exception) |
 
@@ -81,7 +81,7 @@ This pass builds on an earlier external implementation review (21 Sep 2026) whos
 | 4.4 | `sql.query()` single 50s wait, no `resp.status.state` check; `query_many._safe` swallows all exceptions → PENDING/FAILED look like empty data; write endpoints can report false success. | major | fixed |
 | 4.5 | `whatif_rates()` sums amounts with no `cf_type` sign; doesn't recompute RA; aggregates PAA+GMM; returns existing CSM. | major | fixed (sign + scope; RA/legs disclosed) |
 | 4.6 | `approve()` accepts unvalidated `ws`/`dec` enums (typo → wrong status silently). | minor | fixed |
-| 4.7 | `post_journal()` no gl_account/amount validation before landing. | minor | roadmapped |
+| 4.7 | `post_journal()` no gl_account/amount validation before landing. | minor | fixed (rejects blank/equal accounts, non-numeric/zero amount, and unknown GL accounts vs ref_coa_mapping — verified live) |
 | 4.8 | `agents._log_activity()` swallows exceptions silently. | nit | fixed |
 
 ## 5 · Security
@@ -133,7 +133,7 @@ This pass builds on an earlier external implementation review (21 Sep 2026) whos
 | 8.3 | Rate what-if shows a wrong LRC sensitivity number on screen (sign + maturity-basis mismatch on the flows↔curve join). | major | fixed |
 | 8.4 | No responsive media queries ≤900/≤820px (sidebar + grids cramp). | major | fixed (grids narrow at 900px; sidebar → wrapping top bar at 820px; verified served live) |
 | 8.5 | "Show the SQL" box renders empty with no error/loading state on a failed query. | minor | fixed (error state) |
-| 8.6 | No in-page "how does this work?" Learn glyph; some KPI subtexts shallow. | minor | roadmapped |
+| 8.6 | No in-page "how does this work?" Learn glyph; some KPI subtexts shallow. | minor | glyph fixed (persistent "❓ How does this work?" affordance → Learn deck on every working screen; verified served). KPI-subtext depth still roadmapped. |
 
 ---
 
