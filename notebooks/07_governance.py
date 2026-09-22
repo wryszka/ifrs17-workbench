@@ -73,6 +73,11 @@ AS SELECT journal_id, period, gl_account_dr, gl_account_cr, amount_eur, narrativ
 FROM {FQ}.slv_manual_journal
 """)
 print("gov_journal_secure view created")
+# NOTE (least-privilege hardening, roadmap): the app's real journal query path is masked (it reads
+# gov_journal_secure). A residual defense-in-depth gap is that the app SP holds schema-level SELECT and
+# could read the unmasked silver view slv_manual_journal directly. slv_manual_journal is a DLT-managed
+# view (no column-mask / DML target), so the clean fix is per-object SELECT grants that exclude it
+# (rather than a schema-wide grant), or a column mask on the bronze base. Tracked in DECISIONS.md.
 
 # COMMAND ----------
 

@@ -19,9 +19,12 @@ GL break **€412,340.00** cleared by journal MJ-2026Q2-001 · flood event gross
 prep (ten slides + glossary + Q&A armour). Present the *process*; let the workbench present the
 *standard*. **Never defend an actuarial choice** — use the deflection at the bottom verbatim.
 
-**Pre-flight (2 min):** app RUNNING · `ifrs17_98_smoke_test` last run ALL PASS · cache toggle
-CACHED · no drifted file in landing (Cockpit shows a green Day 1–10 board, Day 9 sign-off
-in progress).
+**Pre-flight (2 min):** hit **`/api/preflight`** first — it warms the warehouse and returns
+`{warehouse_ready, cache_table, supervisor_endpoint, close_ready}` (a cold warehouse is the #1
+demo-day failure; this pre-warms it). Then: app RUNNING · `ifrs17_98_smoke_test` last run ALL PASS ·
+cache toggle CACHED · no drifted file in landing (Cockpit shows a green Day 1–10 board, Day 9 sign-off
+in progress). **Timing:** the full close is ~8 min — the inject/rerun beat won't finish inside the
+3-min cockpit slot, so **pre-run it** (or start it, move on, and return to show completion).
 
 The spine (same three beats as every Bricksurance workbench):
 **all data together → see & govern → safely automate.**
@@ -73,9 +76,10 @@ Cohort selector → **CLT-2025-NSP**.
 - The B96-ordered waterfall with paragraph references. This quarter: a casualty-inflation
   assumption (v2) unlocked ~€1.6m of CSM — visible, not fatal, and release still happens
   last, on coverage units.
-- Discount & Assumptions → **+100 bps what-if**: every PV re-computed live in seconds; the
-  P&L/OCI legs move — **and the CSM doesn't**, because accretion is locked-in. *"That's the
-  detail your actuaries will check. It's right."*
+- Discount & Assumptions → **+100 bps what-if**: the net-cash-flow PV (LIC/LRC) re-computes live
+  in seconds — **and the CSM doesn't move**, because accretion is locked-in. *"That's the detail
+  your actuaries will check."* (Full RA re-measurement + the P&L/OCI split are engine outputs on a
+  close run, not the live what-if — say so if pressed; see Q&A #5.)
 - Mention: base curves are the real EIOPA files (UFR 3.30, LLP 20 — the published parameters);
   the illiquidity premium is a versioned assumption, because IFRS 17 rates are not Solvency II
   rates.
@@ -88,10 +92,14 @@ Cohort selector → **CLT-2025-NSP**.
 - **Reconciliation**: the €412,340.00 break (a SAP cost-centre slip), found, journal-cleared,
   residual zero. Journal identities are **masked by Unity Catalog itself** — the app's service
   principal is deliberately outside the finance-controllers group.
-- **Sign-off & Audit** (the second wow): generate the certificate (evidence snapshot +
-  SHA-256), then **Auditor mode → Reproduce**: the signed number re-read from pinned Delta
-  versions, identical. *"Audit reperformance that takes weeks becomes a click. The audit trail
-  is a join, not a project."*
+- **Sign-off & Audit** (the second wow): sign-off is **gated** — the CFO button is refused unless
+  the close gate is green, the recon is tied and the prerequisite workstreams are approved (and the
+  signer is the authenticated user, not a typed name). Generate the certificate (evidence snapshot +
+  SHA-256), then **Auditor mode → Reproduce**: the **signed** figure re-read from Delta history **as
+  at the sign-off moment**, identical — and if the book has since moved, the live value differs while
+  the signed number still reproduces. *"Audit reperformance that takes weeks becomes a click. The
+  audit trail is a join, not a project."* (If asked "does it re-run the engines on old inputs?" — no,
+  that's the close rerun; this reproduces the signed output. See Q&A #1.)
 
 ## Beat 5 · IFRS 17 AI + close (2 min)
 

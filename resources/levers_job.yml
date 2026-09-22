@@ -11,7 +11,7 @@ resources:
       environments:
         - environment_key: default
           spec:
-            client: "5"
+            client: "6"
       tasks:
         - task_key: lever
           environment_key: default

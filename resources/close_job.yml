@@ -13,7 +13,7 @@ resources:
       environments:
         - environment_key: default
           spec:
-            client: "5"
+            client: "6"
             dependencies:
               - openpyxl
       tasks:

@@ -15,7 +15,7 @@ resources:
       environments:
         - environment_key: default
           spec:
-            client: "5"
+            client: "6"
       tasks:
         - task_key: truth_model
           environment_key: default

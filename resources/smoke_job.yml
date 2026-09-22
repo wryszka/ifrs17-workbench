@@ -8,7 +8,7 @@ resources:
       environments:
         - environment_key: default
           spec:
-            client: "5"
+            client: "6"
       tasks:
         - task_key: smoke
           environment_key: default

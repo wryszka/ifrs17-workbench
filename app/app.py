@@ -5,7 +5,7 @@ import io
 import json
 import uuid
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, Response
 
 from server import agents, config, sql
@@ -23,9 +23,82 @@ def _struct(fn, *args):
     return json.loads(row["r"]) if row and row.get("r") else {}
 
 
+def _actor(request: Request) -> str:
+    """The identity that actually signs/approves — derived from the Databricks Apps auth headers,
+    NEVER from the request body (which is spoofable). Databricks Apps forwards the end user as
+    X-Forwarded-Email / X-Forwarded-Preferred-Username / X-Forwarded-User."""
+    h = request.headers
+    for k in ("x-forwarded-email", "x-forwarded-preferred-username", "x-forwarded-user"):
+        v = h.get(k)
+        if v:
+            return v
+    # Fallback: the app service principal (still a real, non-spoofable identity, not a body value).
+    try:
+        return config.get_workspace_client().current_user.me().user_name or "unknown"
+    except Exception:
+        return "unknown"
+
+
+def _close_ready() -> dict:
+    """Server-side close-readiness gate. Sign-off and certificates are refused unless the close is
+    actually ready: DQ/close gate not blocked, trial-balance recon fully tied, no failed engine runs.
+    This is enforced here (not in the UI) so no client can bypass it."""
+    q = sql.query_many({
+        "blocked": f"SELECT count(*) n FROM {F('gld_close_status')} WHERE close_period='{PERIOD}' AND status IN ('blocked','red')",
+        "recon": f"SELECT count(*) items, sum(CASE WHEN status='tied' THEN 1 ELSE 0 END) tied FROM {F('gld_trial_balance_recon')} WHERE close_period='{PERIOD}'",
+        "failed_runs": f"""SELECT count(*) n FROM (
+            SELECT status, ROW_NUMBER() OVER (PARTITION BY engine ORDER BY finished_at DESC) rn
+            FROM {F('gov_run_audit')} WHERE close_period='{PERIOD}'
+        ) WHERE rn=1 AND lower(status) NOT IN ('success','succeeded','ok','done')""",
+    })
+    blocked = int((q["blocked"][0] or {}).get("n", 0) or 0) if q.get("blocked") else 0
+    r = q["recon"][0] if q.get("recon") else {}
+    items = int(r.get("items", 0) or 0)
+    tied = int(r.get("tied", 0) or 0)
+    failed = int((q["failed_runs"][0] or {}).get("n", 0) or 0) if q.get("failed_runs") else 0
+    reasons = []
+    if blocked:
+        reasons.append(f"{blocked} close-gate workstream(s) blocked")
+    if items == 0 or tied < items:
+        reasons.append(f"trial-balance recon not fully tied ({tied}/{items})")
+    if failed:
+        reasons.append(f"{failed} engine run(s) not successful")
+    return {"ready": not reasons, "reasons": reasons}
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
+
+
+@app.get("/api/preflight")
+def preflight():
+    """Pre-demo health check — warms the warehouse and reports readiness so a presenter never
+    discovers a cold warehouse or a missing asset live. Safe to poll before a session."""
+    import time as _t
+    out = {}
+    t0 = _t.time()
+    try:
+        sql.query_one("SELECT 1 v")  # forces the warehouse to start via the polling helper
+        out["warehouse_ready"] = True
+    except Exception as e:
+        out["warehouse_ready"] = False
+        out["warehouse_error"] = str(e)[:200]
+    out["warehouse_ms"] = int((_t.time() - t0) * 1000)
+    try:
+        out["cache_table"] = bool(sql.query_one(f"SELECT count(*) n FROM {config.CACHE_TABLE}") is not None)
+    except Exception:
+        out["cache_table"] = False
+    try:
+        out["supervisor_endpoint"] = config.resolve_endpoint(config.EP_AGENT_SUBSTR)
+    except Exception:
+        out["supervisor_endpoint"] = None
+    try:
+        out["close_ready"] = _close_ready()
+    except Exception as e:
+        out["close_ready"] = {"ready": False, "reasons": [str(e)[:160]]}
+    out["ok"] = bool(out.get("warehouse_ready"))
+    return out
 
 
 @app.get("/api/config")
@@ -161,7 +234,9 @@ def whatif_rates(body: dict = None):
     cur = "2026-06-30"
     out = sql.query_one(f"""
         WITH flows AS (
-          SELECT p.portfolio_id, p.scope, p.amount,
+          SELECT p.portfolio_id, p.scope,
+                 -- sign by direction: premiums are inflows (reduce the liability), claims/expense are outflows.
+                 CASE WHEN p.cf_type = 'premium' THEN -p.amount ELSE p.amount END signed_amount,
                  greatest(1, (year(p.projection_month) - 2026) * 12 + month(p.projection_month) - 6) m
           FROM {F('slv_cashflow_projection')} p
           WHERE p.run_id = 'RSV_{PERIOD}' AND p.projection_month > DATE'{cur}'
@@ -169,16 +244,18 @@ def whatif_rates(body: dict = None):
           SELECT portfolio_id, maturity_month, base_spot, ilp_bps, discount_factor
           FROM {F('ref_discount_curve')} WHERE curve_date = '{cur}' AND portfolio_id != '_BASE'
         )
-        SELECT round(sum(CASE WHEN f.scope='LIC' THEN f.amount * c.discount_factor END), 2) lic_pv_now,
-               round(sum(CASE WHEN f.scope='LIC' THEN f.amount * pow(1 + c.base_spot + c.ilp_bps/10000.0 + {shift}, -c.maturity_month/12.0) END), 2) lic_pv_shifted,
-               round(sum(CASE WHEN f.scope='LRC' THEN f.amount * c.discount_factor END), 2) lrc_pv_now,
-               round(sum(CASE WHEN f.scope='LRC' THEN f.amount * pow(1 + c.base_spot + c.ilp_bps/10000.0 + {shift}, -c.maturity_month/12.0) END), 2) lrc_pv_shifted
+        SELECT round(sum(CASE WHEN f.scope='LIC' THEN f.signed_amount * c.discount_factor END), 2) lic_pv_now,
+               round(sum(CASE WHEN f.scope='LIC' THEN f.signed_amount * pow(1 + c.base_spot + c.ilp_bps/10000.0 + {shift}, -c.maturity_month/12.0) END), 2) lic_pv_shifted,
+               round(sum(CASE WHEN f.scope='LRC' THEN f.signed_amount * c.discount_factor END), 2) lrc_pv_now,
+               round(sum(CASE WHEN f.scope='LRC' THEN f.signed_amount * pow(1 + c.base_spot + c.ilp_bps/10000.0 + {shift}, -c.maturity_month/12.0) END), 2) lrc_pv_shifted
         FROM flows f JOIN c ON c.portfolio_id = f.portfolio_id AND c.maturity_month = f.m""")
     csm = sql.query_one(f"SELECT round(sum(amount),2) csm FROM {F('gld_csm_rollforward')} "
                         f"WHERE close_period = '{PERIOD}' AND step = 'closing'")
     return {"bps": bps, **(out or {}), "csm_closing_unchanged": (csm or {}).get("csm"),
-            "note": "BS remeasurement lands in P&L (LIC, policy choice) and OCI (GMM LRC); the CSM does not "
-                    "move — interest accretion is locked at the cohort inception curve."}
+            "note": "Aggregate net-cash-flow PV sensitivity (premiums signed as inflows). The point of "
+                    "this what-if is that the CSM does NOT move — interest accretion is locked at the "
+                    "cohort inception curve. Full RA re-measurement and the P&L/OCI disaggregation are "
+                    "computed by the engine on a close run, not live here."}
 
 
 # ---------------------------------------------------------------- results & disclosures
@@ -263,24 +340,48 @@ def signoff():
     return q
 
 
+ALLOWED_WORKSTREAMS = {"Data & DQ", "Measurement", "Reconciliation", "Disclosures", "CFO sign-off", "Close"}
+ALLOWED_DECISIONS = {"approved", "rejected"}
+
+
 @app.post("/api/signoff/approve")
-def approve(body: dict):
-    ws = sql.esc(body.get("workstream", "Close"))
-    dec = sql.esc(body.get("decision", "approved"))
-    who = sql.esc(body.get("approver", "cfo@bricksurance.example"))
-    com = sql.esc(body.get("comment", ""))
-    sql.query(f"INSERT INTO {F('gov_close_approvals')} VALUES ('{PERIOD}', '{ws}', '{dec}', '{who}', '{com}', current_timestamp())")
+def approve(body: dict, request: Request):
+    ws = body.get("workstream", "Close")
+    dec = body.get("decision", "approved")
+    if ws not in ALLOWED_WORKSTREAMS:
+        return {"ok": False, "reason": f"unknown workstream '{ws}'"}
+    if dec not in ALLOWED_DECISIONS:
+        return {"ok": False, "reason": f"unknown decision '{dec}'"}
+    # Identity is the authenticated user, never a body field.
+    who = _actor(request)
+    com = body.get("comment", "")
+    # Server-side gate: the CFO sign-off is refused unless the close is actually ready, and unless
+    # the prerequisite workstreams have themselves been approved. No client can bypass this.
+    if dec == "approved" and ws == "CFO sign-off":
+        ready = _close_ready()
+        if not ready["ready"]:
+            return {"ok": False, "reason": "close not ready for sign-off: " + "; ".join(ready["reasons"])}
+        prereq = sql.query_one(f"""SELECT count(DISTINCT workstream) n FROM {F('gov_close_approvals')}
+            WHERE close_period='{PERIOD}' AND decision='approved'
+              AND workstream IN ('Data & DQ','Measurement','Reconciliation','Disclosures')""")
+        if int((prereq or {}).get("n", 0) or 0) < 4:
+            return {"ok": False, "reason": "prerequisite workstream approvals incomplete (need Data & DQ, Measurement, Reconciliation, Disclosures)"}
+    sql.query(f"INSERT INTO {F('gov_close_approvals')} VALUES ('{PERIOD}', '{sql.esc(ws)}', '{sql.esc(dec)}', '{sql.esc(who)}', '{sql.esc(com)}', current_timestamp())")
     if dec == "approved" and ws == "CFO sign-off":
         sql.query(f"""MERGE INTO {F('gld_close_status')} t USING (SELECT '{PERIOD}' cp, 9 wd, 'Sign-off' ws) s
                       ON t.close_period=s.cp AND t.working_day=s.wd AND t.workstream=s.ws
-                      WHEN MATCHED THEN UPDATE SET status='done', detail='signed by {who}', updated_at=current_timestamp()""")
-    return {"ok": True}
+                      WHEN MATCHED THEN UPDATE SET status='done', detail='signed by {sql.esc(who)}', updated_at=current_timestamp()""")
+    return {"ok": True, "approver": who}
 
 
 @app.post("/api/signoff/certificate")
-def certificate(body: dict = None):
+def certificate(body: dict = None, request: Request = None):
     body = body or {}
-    signed_by = body.get("signed_by", "cfo@bricksurance.example")
+    ready = _close_ready()
+    if not ready["ready"]:
+        return {"error": "close not ready — certificate refused", "reasons": ready["reasons"]}
+    # Signer is the authenticated user, never a body field.
+    signed_by = _actor(request) if request is not None else "unknown"
     figures = sql.query_many({
         "pnl": f"SELECT line_item, amount FROM {F('gld_pnl_statement')} WHERE close_period='{PERIOD}' ORDER BY line_no",
         "lc": f"SELECT round(sum(amount),2) v FROM {F('gld_loss_component')} WHERE close_period='{PERIOD}' AND step='closing'",
@@ -299,8 +400,12 @@ def certificate(body: dict = None):
     w = config.get_workspace_client()
     path = f"/Volumes/{config.CATALOG}/{config.SCHEMA}/ifrs17_files/packs/{cert_id}.pdf"
     w.files.upload(path, io.BytesIO(pdf_bytes), overwrite=True)
+    # Escape BACKSLASHES before single quotes: the evidence contains nested JSON (input_versions) with
+    # \" sequences, and a Databricks SQL string literal processes backslash escapes — without this the
+    # \" collapse to " and the stored evidence_json becomes invalid JSON (breaks reproduce()).
+    ev_sql = json.dumps(evidence, default=str).replace("\\", "\\\\").replace("'", "''")
     sql.query(f"""INSERT INTO {F('gov_signoff_certificates')} VALUES ('{cert_id}', '{PERIOD}',
-                  '{sql.esc(signed_by)}', current_timestamp(), '{sql.esc(json.dumps(evidence, default=str))}',
+                  '{sql.esc(signed_by)}', current_timestamp(), '{ev_sql}',
                   '{sha}', '{path}')""")
     return {"certificate_id": cert_id, "sha256": sha, "pdf_path": path}
 
@@ -316,34 +421,87 @@ def get_certificate(cert_id: str):
                     headers={"Content-Disposition": f"attachment; filename={cert_id}.pdf"})
 
 
+def _num(x):
+    try:
+        return round(float(x), 2)
+    except (TypeError, ValueError):
+        return None
+
+
 @app.post("/api/audit/reproduce")
 def reproduce(body: dict = None):
-    """Auditor mode: pick a signed number, re-read it from the PINNED Delta versions (time travel)
-    and show it matches the live value — the reproduce-that-number moment."""
+    """Auditor mode: take a SIGNED number from a specific certificate and re-read it from the Delta
+    history AS AT the moment it was signed (TIMESTAMP AS OF signed_at) — proving the signed figure is
+    reproducible, and separately showing whether the book has moved since. This is the honest claim:
+    it reproduces the signed OUTPUT, it does not re-run the engines (that's the close rerun lever)."""
     body = body or {}
     metric = body.get("metric", "loss_component_closing")
+    # Pick the certificate to reproduce against: an explicit id, else the latest signed one.
+    if body.get("certificate_id"):
+        cert = sql.query_one(f"""SELECT certificate_id, cast(signed_at as string) signed_at, signed_by, evidence_json
+                                 FROM {F('gov_signoff_certificates')}
+                                 WHERE certificate_id='{sql.esc(body['certificate_id'])}'""")
+    else:
+        cert = sql.query_one(f"""SELECT certificate_id, cast(signed_at as string) signed_at, signed_by, evidence_json
+                                 FROM {F('gov_signoff_certificates')} WHERE close_period='{PERIOD}'
+                                 ORDER BY signed_at DESC LIMIT 1""")
+    table, expr = {
+        "loss_component_closing": ("gld_loss_component", "round(sum(amount),2) v FROM {t} WHERE close_period='%s' AND step='closing'" % PERIOD),
+        "csm_closing": ("gld_csm_rollforward", "round(sum(amount),2) v FROM {t} WHERE close_period='%s' AND step='closing'" % PERIOD),
+        "insurance_revenue": ("gld_insurance_revenue", "round(sum(amount),2) v FROM {t} WHERE close_period='%s'" % PERIOD),
+        "lic_closing": ("gld_lic_rollforward", "round(sum(amount),2) v FROM {t} WHERE close_period='%s' AND step='closing'" % PERIOD),
+    }.get(metric, ("gld_loss_component", "round(sum(amount),2) v FROM {t} WHERE close_period='%s' AND step='closing'" % PERIOD))
+
+    if not cert:
+        return {"metric": metric, "table": table, "error": "no signed certificate found — sign the close first",
+                "match": None}
+
+    # The figure the CFO actually signed (from the certificate's frozen evidence).
+    signed_value = None
+    try:
+        signed_value = _num((json.loads(cert["evidence_json"]).get("key_figures") or {}).get(metric))
+    except Exception:
+        signed_value = None
+    signed_at = cert["signed_at"]
+
+    live = _num((sql.query_one(f"SELECT {expr.format(t=F(table))}") or {}).get("v"))
+    # Pin to the table VERSION that was current WHEN the certificate was signed — i.e. the latest commit
+    # at or before signed_at. (Sign-off always follows the close write, so TIMESTAMP AS OF signed_at would
+    # be *after* the latest commit and fail; the version-at-sign-off is the correct, stable anchor.)
+    pinned, pinned_version, pinned_error = None, None, None
+    try:
+        vrow = sql.query_one(f"SELECT max(version) v FROM (DESCRIBE HISTORY {F(table)}) "
+                             f"WHERE timestamp <= timestamp('{sql.esc(signed_at)}')")
+        pinned_version = (vrow or {}).get("v")
+        if pinned_version is None:
+            pinned_error = "no table version exists at or before the sign-off time (history trimmed)."
+        else:
+            pinned = _num((sql.query_one(
+                f"SELECT {expr.format(t=F(table) + f' VERSION AS OF {int(pinned_version)}')}") or {}).get("v"))
+    except Exception as e:  # e.g. that version's files are past Delta retention
+        pinned_error = ("cannot re-read the sign-off version — it is beyond this table's Delta retention "
+                        f"window; sign a fresh certificate to show reproduction. [{str(e)[:100]}]")
+
+    # The producing run whose input/assumption versions are stamped in the audit log.
     run = sql.query_one(f"""SELECT run_id, engine, input_versions, assumption_versions, curve_dates,
                                    cast(finished_at as string) finished_at
                             FROM {F('gov_run_audit')} WHERE close_period='{PERIOD}'
+                              AND finished_at <= timestamp('{sql.esc(signed_at)}')
                               AND engine IN ('paa_lic_engine','gmm_csm_engine','disclosure_engine')
                             ORDER BY finished_at DESC LIMIT 1""")
-    table, expr = {
-        "loss_component_closing": ("gld_loss_component", f"round(sum(amount),2) v FROM {{t}} WHERE close_period='{PERIOD}' AND step='closing'"),
-        "csm_closing": ("gld_csm_rollforward", f"round(sum(amount),2) v FROM {{t}} WHERE close_period='{PERIOD}' AND step='closing'"),
-        "insurance_revenue": ("gld_insurance_revenue", f"round(sum(amount),2) v FROM {{t}} WHERE close_period='{PERIOD}'"),
-        "lic_closing": ("gld_lic_rollforward", f"round(sum(amount),2) v FROM {{t}} WHERE close_period='{PERIOD}' AND step='closing'"),
-    }.get(metric, ("gld_loss_component", f"round(sum(amount),2) v FROM {{t}} WHERE close_period='{PERIOD}' AND step='closing'"))
-    live = sql.query_one(f"SELECT {expr.format(t=F(table))}")
-    ver = sql.query_one(f"SELECT max(version) v FROM (DESCRIBE HISTORY {F(table)})")
-    version = ver["v"] if ver else None
-    pinned = sql.query_one(f"SELECT {expr.format(t=F(table) + f' VERSION AS OF {version}')}") if version is not None else None
-    return {"metric": metric, "table": table,
-            "live_value": (live or {}).get("v"), "pinned_version": (ver or {}).get("v"),
-            "value_at_pinned_version": (pinned or {}).get("v"),
-            "match": (live or {}).get("v") == (pinned or {}).get("v"),
-            "producing_run": run,
-            "note": "The engine run pinned its input Delta versions and assumption versions at write time — "
-                    "an auditor re-reads the exact state that produced the signed number."}
+
+    reference = signed_value if signed_value is not None else pinned
+    return {"metric": metric, "table": table, "certificate_id": cert["certificate_id"],
+            "signed_by": cert.get("signed_by"), "signed_at": signed_at,
+            "signed_value": signed_value, "value_at_signing": pinned, "pinned_version": pinned_version,
+            "live_value": live,
+            "reproduced": (pinned is not None and reference is not None and pinned == reference),
+            "match": (pinned is not None and signed_value is not None and pinned == signed_value),
+            "book_moved_since_signing": (signed_value is not None and live != signed_value),
+            "pinned_error": pinned_error, "producing_run": run,
+            "note": "Reproduced by re-reading the Delta history AS AT the sign-off timestamp and comparing "
+                    "to the figure frozen in the certificate. If the book has since changed, the live value "
+                    "differs while the signed number still reproduces from history — the audit trail is a join."}
 
 
 @app.post("/api/audit/narrate")

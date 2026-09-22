@@ -41,6 +41,12 @@ expense = pdf(f"SELECT portfolio_id, ROUND(SUM(attributable_expense),2) e FROM {
     .set_index("portfolio_id")["e"]
 gwp_tot = pdf(f"SELECT portfolio_id, SUM(total_premium) g FROM {FQ}.slv_policy GROUP BY 1") \
     .set_index("portfolio_id")["g"]
+# Acquisition amortisation per GMM group×quarter (from 04c) — §80 shows the recovery of acquisition
+# cash flows as insurance REVENUE, with an equal amount in insurance service expense (amortisation).
+# 04e already posts the amortisation (5020) and posts the full gmm revenue sum to 4000, so adding the
+# recovery as a revenue component here grosses up revenue and expense equally (profit-neutral).
+acq_am = pdf(f"SELECT group_id, close_period, acq_amortised FROM {FQ}.gld_cash_measures") \
+    .set_index(["group_id", "close_period"])["acq_amortised"]
 
 
 def fcf_rem_locked(run, port, cy, li_date, asof, raf):
@@ -93,7 +99,7 @@ units = pdf(f"""
 
 # COMMAND ----------
 
-csm_rows, cu_rows, rev_rows = [], [], []
+csm_rows, cu_rows, rev_rows, lc_rows_gmm = [], [], [], []
 for _, g in groups.iterrows():
     gid, port, cy = g["group_id"], g["portfolio_id"], int(g["cohort_year"])
     li_date = g["locked_in_curve_date"]
@@ -158,6 +164,15 @@ for _, g in groups.iterrows():
         lc_add = 0.0
         if base < 0:  # unlock exhausted the CSM → loss component (not expected on this book)
             lc_add, base = -base, 0.0
+        # GMM loss-component roll-forward (written to gld_loss_component below, so an exhaustion path
+        # is never lost from P&L/BS). Zero across the surviving-CSM hero book; reversal-before-CSM-
+        # rebuild is a disclosed simplification (see Learn / DEMO_QA).
+        lc_open = lc
+        lc_close = round(lc + lc_add, 2)
+        for _step, _amt in (("opening", lc_open), ("recognised_in_period", lc_add),
+                            ("reversed_in_period", 0.0), ("closing", lc_close)):
+            lc_rows_gmm.append(dict(group_id=gid, portfolio_id=port, close_period=lbl,
+                                    step=_step, amount=round(_amt, 2)))
         u = units.loc[(gid, lbl)] if (gid, lbl) in units.index else None
         u_q = float(u["units_in_q"]) if u is not None else 0.0
         u_rem = float(u["units_remaining"]) if u is not None else 0.0
@@ -170,10 +185,10 @@ for _, g in groups.iterrows():
                           ("fcf_changes_future_service", -unlock), ("fx", 0.0),
                           ("csm_release", -release), ("closing", closing)):
             csm_rows.append(dict(group_id=gid, portfolio_id=port, close_period=lbl, step=step,
-                                 amount=round(amt, 2), paragraph={"opening": "B96", "new_business": "B96(a)",
+                                 amount=round(amt, 2), paragraph={"opening": "44", "new_business": "B96(a)",
                                  "interest_accretion": "B96(b)", "experience_adjustments": "B96(d)",
                                  "fcf_changes_future_service": "B96(c)", "fx": "B96", "csm_release": "B119",
-                                 "closing": "B96"}[step]))
+                                 "closing": "44"}[step]))
         cu_rows.append(dict(group_id=gid, portfolio_id=port, close_period=lbl,
                             units_in_period=u_q, units_remaining=u_rem,
                             release_fraction=round(rel_frac, 6), csm_release=release,
@@ -189,11 +204,13 @@ for _, g in groups.iterrows():
             sub_rev = sub_rev[sub_rev["m"] > q_end(QL[i - 1])]
         exp_q = sub_rev["amount"].sum()
         ra_release = round(exp_q * raf, 2)
+        acq_rec = round(float(acq_am.get((gid, lbl), 0.0)), 2)  # §80 acquisition-cost recovery
         for comp, amt in (("expected_claims_expenses", round(float(exp_q), 2)),
-                          ("ra_release", ra_release), ("csm_release", release)):
+                          ("ra_release", ra_release), ("csm_release", release),
+                          ("acquisition_recovery", acq_rec)):
             rev_rows.append(dict(group_id=gid, portfolio_id=port, close_period=lbl,
                                  component=comp, amount=amt))
-        opening, lc = closing, round(lc + lc_add, 2)
+        opening, lc = closing, lc_close
 
 write_engine(pd.DataFrame(csm_rows), "gld_csm_rollforward",
              "group_id string, portfolio_id string, close_period string, step string, amount double, paragraph string",
@@ -209,7 +226,22 @@ write_engine(pd.DataFrame(cu_rows), "gld_coverage_units",
 write_engine(pd.DataFrame(rev_rows), "gld_revenue_gmm",
              "group_id string, portfolio_id string, close_period string, component string, amount double",
              "GMM insurance revenue components: expected claims+expenses (prior-run view), RA release, "
-             "CSM release. Never premium.")
+             "CSM release, acquisition-cost recovery (matched by amortisation in ISE). Never premium.")
+
+# GMM loss component → APPEND to gld_loss_component (04c already wrote the PAA rows with
+# mode=overwrite; we must not re-write_engine that table or the PAA hero would be clobbered).
+# Idempotent: delete any prior rows for these GMM groups, then append. Zero across the hero book.
+lc_gmm = pd.DataFrame(lc_rows_gmm, columns=["group_id", "portfolio_id", "close_period", "step", "amount"])
+if len(lc_gmm):
+    lc_gmm["amount"] = lc_gmm["amount"].round(2)
+    lc_gmm = lc_gmm.sort_values(by=list(lc_gmm.columns), kind="mergesort").reset_index(drop=True)
+    gids = ", ".join("'%s'" % g for g in sorted(lc_gmm["group_id"].unique()))
+    spark.sql(f"DELETE FROM {FQ}.gld_loss_component WHERE group_id IN ({gids})")
+    spark.createDataFrame(
+        lc_gmm, "group_id string, portfolio_id string, close_period string, step string, amount double"
+    ).write.mode("append").saveAsTable(f"{FQ}.gld_loss_component")
+    print(f"  gld_loss_component ← +{len(lc_gmm)} GMM rows (appended; closing LC = "
+          f"{lc_gmm[lc_gmm['step']=='closing']['amount'].sum():.2f})")
 
 clt25 = pd.DataFrame(csm_rows)
 clt25 = clt25[(clt25["group_id"] == "CLT-2025-NSP") & (clt25["close_period"] == CLOSE_PERIOD)]

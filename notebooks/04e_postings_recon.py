@@ -90,8 +90,10 @@ for lbl, amt in expense.groupby("period")["non_attributable_expense"].max().item
     post(lbl, "GROUP", "expenses_nonattributable", amt, "7000", "1000")
 
 # reinsurance held
+# premium_ceded_earned: Dr reinsurance service expense (5100) / Cr RI asset (2300) — amortises the
+# deferred ceded premium so the RI asset for remaining coverage winds down to zero as coverage expires.
 ri_flows = {"premium_ceded": ("2300", "1000"), "commission_income": ("1000", "5100"),
-            "recoveries_on_paid": ("1000", "2300")}
+            "premium_ceded_earned": ("5100", "2300"), "recoveries_on_paid": ("1000", "2300")}
 for _, r in ri.iterrows():
     if r["component"] in ri_flows:
         dr, cr = ri_flows[r["component"]]

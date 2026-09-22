@@ -4,12 +4,34 @@ USE_CACHE wraps the latency of the FM-backed agent endpoints; structured measure
 panels always read the engine tables / UC functions live. Hero cohorts are pre-warmed by the reset
 job. Mirrors underwriting-workbench server/agents.py.
 """
-import hashlib, json
+import hashlib, json, time
 from . import config, sql
+
+_PERIOD = "2026Q2"
+_dv_cache = {"v": None, "ts": 0.0}
+
+
+def _data_version() -> str:
+    """A token that changes whenever the close is re-run, so cached narration is invalidated by a
+    rerun (not just by an explicit reset). Memoized ~60s so it doesn't add latency per call."""
+    now = time.time()
+    if _dv_cache["v"] is not None and now - _dv_cache["ts"] < 60:
+        return _dv_cache["v"]
+    v = "0"
+    try:
+        row = sql.query_one(
+            f"SELECT cast(max(finished_at) as string) v FROM {config.fqn('gov_run_audit')} "
+            f"WHERE close_period='{_PERIOD}'")
+        v = (row or {}).get("v") or "0"
+    except Exception:
+        pass
+    _dv_cache.update(v=v, ts=now)
+    return v
 
 
 def _key(endpoint: str, payload: dict) -> str:
-    blob = json.dumps({"e": endpoint, "p": payload}, sort_keys=True)
+    # Include the close's data version so a rerun (new engine outputs) misses the old cache entry.
+    blob = json.dumps({"e": endpoint, "p": payload, "dv": _data_version()}, sort_keys=True)
     return hashlib.sha256(blob.encode()).hexdigest()[:32]
 
 
@@ -24,8 +46,14 @@ def _read(key: str):
 
 
 def _write(key: str, endpoint: str, response: str):
-    r = sql.esc(response)
+    # Escape backslashes before single quotes: cached ask_agent payloads are JSON (json.loads on read),
+    # and a Databricks SQL literal processes backslash escapes — without this, \" / \\ in the text
+    # collapse and json.loads(hit) fails, silently defeating the cache.
+    r = (response or "").replace("\\", "\\\\").replace("'", "''")
+    # UPSERT: a live call OVERWRITES any prior cached text for this key (the insert-only version
+    # left stale narration in place). Cached mode fills on miss; live mode refreshes.
     sql.query(f"""MERGE INTO {config.CACHE_TABLE} t USING (SELECT '{key}' k) s ON t.cache_key = s.k
+                  WHEN MATCHED THEN UPDATE SET response = '{r}', endpoint = '{sql.esc(endpoint)}', created_ts = current_timestamp()
                   WHEN NOT MATCHED THEN INSERT (cache_key, endpoint, response, created_ts)
                   VALUES ('{key}', '{sql.esc(endpoint)}', '{r}', current_timestamp())""")
 
@@ -37,8 +65,9 @@ def _log_activity(group_id, agent, activity, tools, signal, reasoning):
             '{sql.esc(group_id or 'book_level')}', '{sql.esc(agent)}', '{sql.esc(activity)}',
             '{sql.esc(tools)[:900]}', '{sql.esc(signal)}', '{sql.esc(reasoning)[:900]}',
             current_timestamp())""")
-    except Exception:
-        pass
+    except Exception as e:  # non-fatal for narration, but logged (was silently swallowed)
+        import sys
+        print(f"[agents._log_activity] failed: {str(e)[:160]}", file=sys.stderr)
 
 
 def ask_agent(question: str, custom_inputs: dict = None, use_cache: bool = None) -> dict:

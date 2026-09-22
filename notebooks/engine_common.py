@@ -67,7 +67,13 @@ def write_engine(df, name, ddl, comment=""):
     df = df.sort_values(by=list(df.columns), kind="mergesort").reset_index(drop=True)
     sdf = spark.createDataFrame(df, ddl)
     sdf.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"{FQ}.{name}")
-    spark.sql(f"ALTER TABLE {FQ}.{name} SET TBLPROPERTIES ('layer'='gold_engine', 'demo'='ifrs17_workbench')")
+    # Auditor mode reproduces a signed number by time-travelling to the sign-off moment. The Delta
+    # default deletedFileRetentionDuration (7 days) would refuse time-travel beyond a week, so extend
+    # it (we never VACUUM — time travel IS the audit trail). Keeps ~90 days of reproducible history.
+    spark.sql(f"ALTER TABLE {FQ}.{name} SET TBLPROPERTIES ("
+              f"'layer'='gold_engine', 'demo'='ifrs17_workbench', "
+              f"'delta.deletedFileRetentionDuration'='interval 90 days', "
+              f"'delta.logRetentionDuration'='interval 90 days')")
     if comment:
         spark.sql(f"COMMENT ON TABLE {FQ}.{name} IS '{comment}'")
     print(f"  {name}: {len(df)} rows")

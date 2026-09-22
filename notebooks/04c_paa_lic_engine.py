@@ -228,10 +228,15 @@ for lbl in QL:
     if lbl < "2025Q1":
         continue
     # ceded premium on PROP receipts (2025+2026 cohorts are within the treaty period)
-    prem_c = cash[(cash["close_period"] == lbl) & (cash["group_id"].str.startswith("PROP-202"))
-                  & (~cash["group_id"].str.startswith("PROP-2024"))]["premiums_received"].sum()
+    covered = ((cash["close_period"] == lbl) & (cash["group_id"].str.startswith("PROP-202"))
+               & (~cash["group_id"].str.startswith("PROP-2024")))
+    prem_c = cash[covered]["premiums_received"].sum()
     ceded = round(prem_c * CESSION, 2)
     commission = round(ceded * COMMISSION, 2)
+    # Ceded premium EARNED to reinsurance service expense over the coverage period (mirrors the
+    # direct book's daily pro-rata earning). This amortises the deferred-premium portion of the RI
+    # asset, so a fully expired treaty runs that asset to zero — no phantom recoverable left behind.
+    earned_ceded = round(cash[covered]["earned_premium"].sum() * CESSION, 2)
     # recoverable on LIC: covered accident years 2025+
     lic_close = lic_df[(lic_df["portfolio_id"] == "PROP") & (lic_df["close_period"] == lbl)
                        & (lic_df["step"] == "closing") & (lic_df["accident_year"] >= 2025)]["amount"].sum()
@@ -244,7 +249,8 @@ for lbl in QL:
                      & (lc_df["group_id"].isin(["PROP-2025-REM", "PROP-2026-REM"]))]["amount"].sum()
     lrc_comp = round(lc_close * CESSION, 2)
     for component, amount, note in (
-            ("premium_ceded", -ceded, f"{CESSION:.0%} QS on property receipts"),
+            ("premium_ceded", -ceded, f"{CESSION:.0%} QS on property receipts (deferred to the RI asset)"),
+            ("premium_ceded_earned", -earned_ceded, "ceded premium earned → reinsurance service expense (amortises the RI asset over coverage)"),
             ("commission_income", commission, f"ceding commission {COMMISSION:.0%}"),
             ("recoverable_on_lic", recoverable, "share of discounted LIC, covered accident years"),
             ("recoveries_on_paid", recoveries, "cash recoveries on paid claims"),
@@ -255,8 +261,9 @@ for lbl in QL:
 
 write_engine(pd.DataFrame(ri_rows), "gld_ri_held",
              "close_period string, treaty_id string, component string, amount double, note string",
-             "Reinsurance held (30% property quota share), simplified and disclosed: ceded premium, "
-             "commission, recoverable on LIC, recoveries on paid, and the LOSS-RECOVERY component — "
+             "Reinsurance held (30% property quota share), simplified and disclosed: ceded premium (deferred), "
+             "ceded premium earned to reinsurance service expense, commission, recoverable on LIC, recoveries "
+             "on paid, and the LOSS-RECOVERY component — "
              "reinsurance held is never onerous; it offsets the gross loss component. The cat XL is "
              "data-only (June 2026 floods sit below its attachment).")
 

@@ -33,6 +33,14 @@ sql(f"GRANT USE CATALOG ON CATALOG {cat} TO `{sp}`")
 sql(f"GRANT USE SCHEMA, SELECT, EXECUTE, MODIFY ON SCHEMA {cat}.{sch} TO `{sp}`")
 sql(f"GRANT READ VOLUME, WRITE VOLUME ON VOLUME {cat}.{sch}.ifrs17_files TO `{sp}`")
 
+# Sensitive-journal masking: the app reads gov_journal_secure, which redacts poster/approver for any
+# principal outside ifrs17_finance_controllers (the app SP is deliberately outside it) — so the app's
+# real query path is masked. Least-privilege hardening (roadmap, see DECISIONS.md): the schema-wide
+# SELECT above also lets the SP read the unmasked silver view slv_manual_journal directly; the clean
+# fix is per-object SELECT grants excluding slv_manual_journal (a schema-level grant can't be revoked
+# per-table in UC, and slv_manual_journal is a DLT view so it takes no column mask).
+sql(f"GRANT SELECT ON VIEW {cat}.{sch}.gov_journal_secure TO `{sp}`")
+
 eps = [e for e in w.serving_endpoints.list()
        if e.name.startswith("ifrs17-") or (e.name.startswith("agents_") and sch in e.name)]
 for e in eps:
