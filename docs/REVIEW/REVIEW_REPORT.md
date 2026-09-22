@@ -91,7 +91,7 @@ This pass builds on an earlier external implementation review (21 Sep 2026) whos
 |---|---|---|---|
 | 5.1 | **Git history clean** — 13 commits, no tokens/PATs/keys in history or working tree. | ✅ pass | — |
 | 5.2 | Spoofable approver/signer — `approve()`/`certificate()` take identity from request body, not the authenticated user (forged maker/checker). | blocker | fixed |
-| 5.3 | `grant_app_sp.py` grants the app SP **schema-wide SELECT** incl. the unmasked silver view `slv_manual_journal`. The app's real query path is masked (it reads `gov_journal_secure`); the residual is defense-in-depth. Attempted base-table column mask — **`slv_manual_journal` is a DLT view, takes no mask/DML**, and a schema-level SELECT can't be revoked per-table in UC. | blocker → major | roadmapped (per-object SELECT excluding slv_manual_journal) |
+| 5.3 | `grant_app_sp.py` granted the app SP **schema-wide SELECT** incl. the unmasked silver view `slv_manual_journal`. **[FIXED]** — schema-wide SELECT revoked; SELECT now granted per object (107) **excluding `slv_manual_journal`**; SP keeps USE/EXECUTE/MODIFY + volume. Verified live: all app panels load, and the recon journal reads masked (`•••@bricksurance (masked by UC)`) via the view's definer rights while the SP has no path to the unmasked base. | blocker → major | fixed |
 | 5.4 | SQL built via f-strings + `sql.esc()` (single-quote doubling only), not parameter binding. No trivial exploit found (esc doubles quotes; PERIOD is a constant), but it is an anti-pattern and brittle. Reconciled across panels as **hardening**, not a live exploit. | major | roadmapped (bind params) |
 
 ## 6 · Current-Databricks expert (up to date)
@@ -131,7 +131,7 @@ This pass builds on an earlier external implementation review (21 Sep 2026) whos
 | 8.1 | House palette, "About this demo" disclaimer, "What am I seeing?" explainers (8+ pages), Learn panel, yellow CACHED/LIVE toggle, loading states, colour-never-sole-signal — all present. | ✅ pass | — |
 | 8.2 | Auditor reproduce shows a green "IDENTICAL" pill unconditionally → false-confidence signal. | blocker | fixed (backend B1) |
 | 8.3 | Rate what-if shows a wrong LRC sensitivity number on screen (sign + maturity-basis mismatch on the flows↔curve join). | major | fixed |
-| 8.4 | No responsive media queries ≤900/≤820px (sidebar + grids cramp). | major | roadmapped |
+| 8.4 | No responsive media queries ≤900/≤820px (sidebar + grids cramp). | major | fixed (grids narrow at 900px; sidebar → wrapping top bar at 820px; verified served live) |
 | 8.5 | "Show the SQL" box renders empty with no error/loading state on a failed query. | minor | fixed (error state) |
 | 8.6 | No in-page "how does this work?" Learn glyph; some KPI subtexts shallow. | minor | roadmapped |
 
@@ -181,7 +181,8 @@ and are deployed to the workspace files; the running app is redeployed and `gran
 ## Open / roadmapped
 - **M2 depth**, **M5 depth**, **7.6** — reinsurance held full roll-forward, GMM acq-recovery disclosure line, technical-account GL tie-out: labelled simplifications in the Learn panel + `DEMO_QA.md`; deeper build is roadmap.
 - **5.4** parameter-binding migration across SQL endpoints (hardening).
-- **8.4** responsive breakpoints; **8.6** Learn glyph + KPI subtext depth.
+- **8.6** Learn glyph + KPI subtext depth.
+- *(8.4 responsive and 5.3 per-object least-privilege — now fixed + verified live, 2026-09-22.)*
 - **3.2** close timing — pre-run/async + runsheet buffer.
 - **4.7** journal schema validation; **1.7/1.8** experience-adjustment + coverage-unit disclosures.
 - Optional: sonnet-5, MLflow agent tracing + governance tags.

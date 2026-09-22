@@ -30,16 +30,46 @@ def sql(stmt):
 
 
 sql(f"GRANT USE CATALOG ON CATALOG {cat} TO `{sp}`")
-sql(f"GRANT USE SCHEMA, SELECT, EXECUTE, MODIFY ON SCHEMA {cat}.{sch} TO `{sp}`")
+# Least privilege: schema-level USE/EXECUTE/MODIFY, but NOT schema-wide SELECT. SELECT is granted per
+# object below, EXCLUDING the unmasked base journal slv_manual_journal — the app reads the masked
+# gov_journal_secure VIEW instead, and a view runs with its owner's rights, so the app SP never needs
+# (and must not have) SELECT on the base. This is the real masking control: without it a schema-wide
+# SELECT would let the SP read unmasked poster/approver identities directly.
+sql(f"GRANT USE SCHEMA, EXECUTE, MODIFY ON SCHEMA {cat}.{sch} TO `{sp}`")
+# Remove any prior schema-wide SELECT (revocable at the level it was granted) so base-table access is
+# governed solely by the per-object grants below. Harmless if it was never granted.
+sql(f"REVOKE SELECT ON SCHEMA {cat}.{sch} FROM `{sp}`")
 sql(f"GRANT READ VOLUME, WRITE VOLUME ON VOLUME {cat}.{sch}.ifrs17_files TO `{sp}`")
 
-# Sensitive-journal masking: the app reads gov_journal_secure, which redacts poster/approver for any
-# principal outside ifrs17_finance_controllers (the app SP is deliberately outside it) — so the app's
-# real query path is masked. Least-privilege hardening (roadmap, see DECISIONS.md): the schema-wide
-# SELECT above also lets the SP read the unmasked silver view slv_manual_journal directly; the clean
-# fix is per-object SELECT grants excluding slv_manual_journal (a schema-level grant can't be revoked
-# per-table in UC, and slv_manual_journal is a DLT view so it takes no column mask).
-sql(f"GRANT SELECT ON VIEW {cat}.{sch}.gov_journal_secure TO `{sp}`")
+EXCLUDE_SELECT = {"slv_manual_journal"}  # unmasked base journal — the SP reads gov_journal_secure instead
+
+
+def grant_select(name, ttype):
+    kw = "VIEW" if ttype == "VIEW" else "TABLE"  # views need ON VIEW; tables/MVs/streaming tables use TABLE
+    for k in (kw, "TABLE", "VIEW"):  # be tolerant of object-type keyword differences across UC versions
+        try:
+            w.statement_execution.execute_statement(
+                statement=f"GRANT SELECT ON {k} {cat}.{sch}.{name} TO `{sp}`",
+                warehouse_id=wh, wait_timeout="50s")
+            return True
+        except Exception:
+            continue
+    return False
+
+
+objs = w.statement_execution.execute_statement(
+    statement=f"SELECT table_name, table_type FROM {cat}.information_schema.tables WHERE table_schema='{sch}'",
+    warehouse_id=wh, wait_timeout="50s").result.data_array or []
+granted, failed = 0, []
+for name, ttype in objs:
+    if name in EXCLUDE_SELECT:
+        continue
+    if grant_select(name, ttype):
+        granted += 1
+    else:
+        failed.append(name)
+print(f"✓ per-object SELECT granted on {granted} objects; SELECT WITHHELD on {sorted(EXCLUDE_SELECT)}"
+      + (f"; ✗ failed: {failed}" if failed else ""))
 
 eps = [e for e in w.serving_endpoints.list()
        if e.name.startswith("ifrs17-") or (e.name.startswith("agents_") and sch in e.name)]
